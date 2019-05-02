@@ -1,40 +1,31 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire i grip
- 
-                              -------------------
-        begin                : 2015-09-29
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 
 
-from qad_arc import *
-from qad_circle import *
-from qad_variables import *
-from qad_entity import *
-from qad_dim import *
-from qad_msg import QadMsg
+from .qad_arc import *
+from .qad_circle import *
+from .qad_variables import *
+from .qad_entity import *
+from .qad_dim import *
+from .qad_msg import QadMsg
 
 
 #===============================================================================
@@ -75,7 +66,7 @@ class QadGripMarker(QgsMapCanvasItem):
       self.iconType = QadGripIconTypeEnum.BOX # icon to be shown
       self.iconSize = QadVariables.get(QadMsg.translate("Environment variables", "GRIPSIZE"))
       self.borderColor = QadVariables.get(QadMsg.translate("Environment variables", "GRIPCONTOUR")) # color of the border
-      self.center = QgsPoint(0, 0) #  coordinates of the point in the center
+      self.center = QgsPointXY(0, 0) #  coordinates of the point in the center
       self.setGrip(QadGripStatusEnum.UNSELECTED, QadGripIconTypeEnum.BOX)
 
       
@@ -136,7 +127,7 @@ class QadGripMarker(QgsMapCanvasItem):
 
    def boundingRect(self):
       if self.__rot != 0:
-         width = qad_utils.getDistance(QgsPoint(0,0), QgsPoint(self.iconSize, self.iconSize))
+         width = qad_utils.getDistance(QgsPointXY(0,0), QgsPointXY(self.iconSize, self.iconSize))
          height = width            
       else:
          width = self.iconSize
@@ -180,7 +171,7 @@ class QadEntityGripPoint():
       self.nVertex = nVertex # numero di vertice della QadLinearObjectList della geometria e sotto-geometria (0-index)
       
       self.gripType = type
-         
+
       self.gripMarker = QadGripMarker(mapCanvas)
       self.gripMarker.setGrip(QadGripStatusEnum.UNSELECTED, self.gripType2IconType(self.gripType), rot)
       self.gripMarker.setCenter(point)
@@ -252,7 +243,7 @@ class QadEntityGripPoints(QgsMapCanvasItem):
       self.mapCanvas = plugIn.canvas
       self.gripPoints = [] # lista dei punti di grip in map coordinate
       if entity is not None:
-         self.entity = QadEntity(entity)      
+         self.entity = QadEntity(entity)
          self.gripPoints = self.initGripPoints(grips)
 
 
@@ -321,7 +312,7 @@ class QadEntityGripPoints(QgsMapCanvasItem):
 
 
    def isIntersecting(self, point):
-      # ritorna il primo punto di grip che interseca point (in map coordinate)
+      # ritorna il primo punto di grip (QadEntityGripPoint) che interseca point (in map coordinate)
       for gripPoint in self.gripPoints:
          if gripPoint.isIntersecting(point):
             return gripPoint
@@ -355,13 +346,13 @@ class QadEntityGripPoints(QgsMapCanvasItem):
          return self.getGripPointsFromDimComponent(dimEntity, self.entity)
          
       wkbType = g.wkbType()
-      if wkbType == QGis.WKBPoint:
+      if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
          # converto il punto dal layer coordinate in map coordinates
          pt = self.mapCanvas.mapSettings().layerToMapCoordinates(self.entity.layer, g.asPoint())
          gp = QadEntityGripPoint(self.mapCanvas, pt, QadGripPointTypeEnum.VERTEX)
          result.append(gp)
          
-      elif wkbType == QGis.WKBMultiPoint:
+      elif wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
          pointList = g.asMultiPoint() # vettore di punti
          atGeom = 0
          for point in pointList:
@@ -371,41 +362,41 @@ class QadEntityGripPoints(QgsMapCanvasItem):
             atGeom = atGeom + 1
             result.append(gp)
             
-      elif wkbType == QGis.WKBLineString:
+      elif wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
-         coordTransform = QgsCoordinateTransform(self.entity.layer.crs(), self.mapCanvas.mapSettings().destinationCrs())
+         coordTransform = QgsCoordinateTransform(self.entity.layer.crs(), self.mapCanvas.mapSettings().destinationCrs(),QgsProject.instance())
          g.transform(coordTransform)           
-         result = self.getGripPointsFromPolyline(g.asPolyline(), 0, 0, grips)
+         result = self.getGripPointsfromPolylineXY(g.asPolyline(), 0, 0, grips)
          
-      elif wkbType == QGis.WKBMultiLineString:
+      elif wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
-         coordTransform = QgsCoordinateTransform(self.entity.layer.crs(), self.mapCanvas.mapSettings().destinationCrs())
+         coordTransform = QgsCoordinateTransform(self.entity.layer.crs(), self.mapCanvas.mapSettings().destinationCrs(), QgsProject.instance())
          g.transform(coordTransform)  
 
          lineList = g.asMultiPolyline() # vettore di linee
          atGeom = 0
          for line in lineList:
-            result.extend(self.getGripPointsFromPolyline(line, atGeom, 0, grips))
+            result.extend(self.getGripPointsfromPolylineXY(line, atGeom, 0, grips))
             atGeom = atGeom + 1
                         
-      elif wkbType == QGis.WKBPolygon:
+      elif wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
-         coordTransform = QgsCoordinateTransform(self.entity.layer.crs(), self.mapCanvas.mapSettings().destinationCrs())
+         coordTransform = QgsCoordinateTransform(self.entity.layer.crs(), self.mapCanvas.mapSettings().destinationCrs(),QgsProject.instance())
          g.transform(coordTransform)  
 
          lineList = g.asPolygon() # vettore di linee    
          atGeom = 0
          for line in lineList:
-            result.extend(self.getGripPointsFromPolyline(line, atGeom, 0, grips))
+            result.extend(self.getGripPointsfromPolylineXY(line, atGeom, 0, grips))
             atGeom = atGeom + 1
             # aggiungo il centroide
-            pt = QgsGeometry().fromPolygon([line]).centroid().asPoint()
+            pt = QgsGeometry().fromPolygonXY([line]).centroid().asPoint()
             gp = QadEntityGripPoint(self.mapCanvas, pt, QadGripPointTypeEnum.CENTER, atGeom, 0)
             result.append(gp)
          
-      elif wkbType == QGis.WKBMultiPolygon:
+      elif wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
-         coordTransform = QgsCoordinateTransform(self.entity.layer.crs(), self.mapCanvas.mapSettings().destinationCrs())
+         coordTransform = QgsCoordinateTransform(self.entity.layer.crs(), self.mapCanvas.mapSettings().destinationCrs(),QgsProject.instance())
          g.transform(coordTransform)  
 
          polygonList = g.asMultiPolygon() # vettore di poligoni
@@ -414,9 +405,9 @@ class QadEntityGripPoints(QgsMapCanvasItem):
             atSubGeom = 0
             result1 = []
             for line in polygon:
-               result.extend(self.getGripPointsFromPolyline(line, atGeom, atSubGeom, grips))
+               result.extend(self.getGripPointsfromPolylineXY(line, atGeom, atSubGeom, grips))
                # aggiungo il centroide
-               pt = QgsGeometry.fromPolygon([line]).centroid().asPoint()
+               pt = QgsGeometry.fromPolygonXY([line]).centroid().asPoint()
                gp = QadEntityGripPoint(self.mapCanvas, pt, QadGripPointTypeEnum.CENTER, atGeom, atSubGeom)
                result.append(gp)
                
@@ -426,19 +417,19 @@ class QadEntityGripPoints(QgsMapCanvasItem):
       return result
    
    
-   def getGripPointsFromPolyline(self, pointList, atGeom = 0, atSubGeom = 0, grips = 2):
+   def getGripPointsfromPolylineXY(self, pointList, atGeom = 0, atSubGeom = 0, grips = 2):
       arc = QadArc()
-      startEndVertices = arc.fromPolyline(pointList, 0)
+      startEndVertices = arc.fromPolylineXY(pointList, 0)
       # se la polilinea è composta solo da un arco
       if startEndVertices and startEndVertices[0] == 0 and startEndVertices[1] == len(pointList)-1:
          return self.getGripPointsFromQadArc(arc, atGeom, atSubGeom, grips)
       else:
          circle = QadCircle()
-         if circle.fromPolyline(pointList): # se la polilinea è un cerchio
+         if circle.fromPolylineXY(pointList): # se la polilinea è un cerchio
             return self.getGripPointsFromQadCircle(circle, atGeom, atSubGeom)
          else:
             linearObjectList = qad_utils.QadLinearObjectList()
-            linearObjectList.fromPolyline(pointList)
+            linearObjectList.fromPolylineXY(pointList)
             return self.getGripPointsFromQadLinearObjectList(linearObjectList, atGeom, atSubGeom, grips)
 
    
@@ -532,7 +523,8 @@ class QadEntityGripPoints(QgsMapCanvasItem):
            dimComponent == QadDimComponentEnum.DIM_PT1 or \
            dimComponent == QadDimComponentEnum.DIM_PT2:
          g = component.getGeometry()
-         if g.wkbType() == QGis.WKBPoint:
+         wkbType = g.wkbType()
+         if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
             # converto il punto dal layer coordinate in map coordinates
             pt = self.mapCanvas.mapSettings().layerToMapCoordinates(self.entity.layer, g.asPoint())
             gp = QadEntityGripPoint(self.mapCanvas, pt, QadGripPointTypeEnum.VERTEX)
@@ -629,11 +621,12 @@ class QadEntitySetGripPoints(QgsMapCanvasItem):
 
 
    def isIntersecting(self, point):
-      for entityGripPoint in self.entityGripPoints:
-         res = entityGripPoint.isIntersecting(point)
+      # ritorna 2 valori:  QadEntityGripPoints, QadEntityGripPoint
+      for entityGripPoints in self.entityGripPoints:
+         res = entityGripPoints.isIntersecting(point)
          if res is not None:
-            return res 
-      return None
+            return entityGripPoints, res
+      return None, None
 
       
    def getSelectedEntityGripPoints(self):

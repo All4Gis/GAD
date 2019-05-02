@@ -1,39 +1,31 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- comando ERASE per cancellare oggetti
- 
-                              -------------------
-        begin                : 2013-08-01
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_getpoint import *
-from qad_ssget_cmd import QadSSGetClass
-import qad_layer
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_getpoint import *
+from .qad_ssget_cmd import QadSSGetClass
+from . import qad_layer
 
 
 # Classe che gestisce il comando ERASE
@@ -50,7 +42,7 @@ class QadERASECommandClass(QadCommandClass):
       return "ERASE"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runERASECommand)
+      action.triggered.connect(self.plugIn.runERASECommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/erase.png")

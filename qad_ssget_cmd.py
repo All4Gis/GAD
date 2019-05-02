@@ -1,45 +1,38 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- comando da inserire in altri comandi per la selezione di un gruppo di feature
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_textwindow import *
-from qad_entity import *
-from qad_dim import QadDimStyles
-from qad_getpoint import *
-from qad_pline_cmd import QadPLINECommandClass
-from qad_circle_cmd import QadCIRCLECommandClass
-from qad_mpolygon_cmd import QadMPOLYGONCommandClass
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_textwindow import *
+from .qad_entity import *
+from .qad_dim import QadDimStyles
+from .qad_getpoint import *
+from .qad_pline_cmd import QadPLINECommandClass
+from .qad_circle_cmd import QadCIRCLECommandClass
+from .qad_mpolygon_cmd import QadMPOLYGONCommandClass
 # ho dovuto spostare in fondo questo import perché qad_mbuffer_cmd fa l'import di qad_ssget_cmd
 #from qad_mbuffer_cmd import QadMBUFFERCommandClass
-import qad_utils
+from . import qad_utils
 
 
 #===============================================================================
@@ -51,13 +44,19 @@ class QadSSGetClass(QadCommandClass):
    def instantiateNewCmd(self):
       """ istanzia un nuovo comando dello stesso tipo """
       return QadSSGetClass(self.plugIn)
-      
+
    def __init__(self, plugIn):
       self.init(plugIn)
 
    def __del__(self):
       QadCommandClass.__del__(self)
       #self.entitySet.deselectOnLayer()
+      if self.PLINECommand is not None: del self.PLINECommand
+      if self.CIRCLECommand is not None: del self.CIRCLECommand
+      if self.MPOLYGONCommand is not None: del self.MPOLYGONCommand
+      if self.MBUFFERCommand is not None: del self.MBUFFERCommand
+      if self.SSGetClass is not None: del self.SSGetClass
+
 
    def init(self, plugIn):
       QadCommandClass.__init__(self, plugIn)
@@ -115,7 +114,7 @@ class QadSSGetClass(QadCommandClass):
       elif self.step == 5: # quando si é in fase di disegno cerchio
          return self.CIRCLECommand.getCurrentContextualMenu()
       elif self.step == 6: # quando si é in fase di selezione entità
-         return self.SSGetClass.getCurrentContextualMenu()
+         return None # return self.SSGetClass.getCurrentContextualMenu()
       elif self.step == 7: # quando si é in fase di disegno polygono
          return self.MPOLYGONCommand.getCurrentContextualMenu()
       elif self.step == 8: # quando si é in fase di disegno buffer 
@@ -131,9 +130,9 @@ class QadSSGetClass(QadCommandClass):
       layerList = []
       for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
          # considero solo i layer vettoriali che sono filtrati per tipo
-         if ((layer.geometryType() == QGis.Point and self.checkPointLayer == True) or \
-             (layer.geometryType() == QGis.Line and self.checkLineLayer == True) or \
-             (layer.geometryType() == QGis.Polygon and self.checkPolygonLayer == True)) and \
+         if ((layer.geometryType() == QgsWkbTypes.PointGeometry and self.checkPointLayer == True) or \
+             (layer.geometryType() == QgsWkbTypes.LineGeometry and self.checkLineLayer == True) or \
+             (layer.geometryType() == QgsWkbTypes.PolygonGeometry and self.checkPolygonLayer == True)) and \
              (self.onlyEditableLayers == False or layer.isEditable()):
             # se devo includere i layers delle quotature
             if self.checkDimLayers == True or \
@@ -182,9 +181,9 @@ class QadSSGetClass(QadCommandClass):
          self.showMsgOnAddRemove(0)
          return
       # controllo sul tipo
-      if (self.checkPointLayer == False and entity.layer.geometryType() == QGis.Point) or \
-         (self.checkLineLayer == False and entity.layer.geometryType() == QGis.Line) or \
-         (self.checkPolygonLayer == False and entity.layer.geometryType() == QGis.Polygon):
+      if (self.checkPointLayer == False and entity.layer.geometryType() == QgsWkbTypes.PointGeometry) or \
+         (self.checkLineLayer == False and entity.layer.geometryType() == QgsWkbTypes.LineGeometry) or \
+         (self.checkPolygonLayer == False and entity.layer.geometryType() == QgsWkbTypes.PolygonGeometry):
          self.showMsgOnAddRemove(0)
          return
       
@@ -218,9 +217,9 @@ class QadSSGetClass(QadCommandClass):
          self.showMsgOnAddRemove(0)
          return
       # controllo sul tipo
-      if (self.checkPointLayer == False and entity.layer.geometryType() == QGis.Point) or \
-         (self.checkLineLayer == False and entity.layer.geometryType() == QGis.Line) or \
-         (self.checkPolygonLayer == False and entity.layer.geometryType() == QGis.Polygon):
+      if (self.checkPointLayer == False and entity.layer.geometryType() == QgsWkbTypes.PointGeometry) or \
+         (self.checkLineLayer == False and entity.layer.geometryType() == QgsWkbTypes.LineGeometry) or \
+         (self.checkPolygonLayer == False and entity.layer.geometryType() == QgsWkbTypes.PolygonGeometry):
          self.showMsgOnAddRemove(0)
          return
       # controllo su layer delle quotature
@@ -282,7 +281,7 @@ class QadSSGetClass(QadCommandClass):
             else:
                self.AddRemoveSelSet(selSet, True) # aggiungo il gruppo di selezione
       else: # se si deve rimuovere dal gruppo di selezione
-         self.AddRemoveEntity(selSet, False) # rimuovo  il gruppo di selezione
+         self.AddRemoveSelSet(selSet, False) # rimuovo il gruppo di selezione
 
     
    #============================================================================
@@ -433,13 +432,17 @@ class QadSSGetClass(QadCommandClass):
                    QadInputTypeEnum.POINT2D | QadInputTypeEnum.KEYWORDS, \
                    None, \
                    keyWords, QadInputModeEnum.NONE)
+      # input dinamico
+      di = self.getPointMapTool().getDynamicInput()
+      di.context = QadDynamicInputContextEnum.NONE
+      di.showInputMsg(prompt, QadInputTypeEnum.NONE)
       return
 
    def run(self, msgMapTool = False, msg = None):
       # ritorna:
       # True per selezione non terminata
       # False per selezione terminata
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # errore
             
@@ -623,11 +626,11 @@ class QadSSGetClass(QadCommandClass):
                      entitySet.removeNotEditable()
                   # controllo sul tipo
                   if self.checkPointLayer == False:
-                     entitySet.removeGeomType(QGis.Point)
+                     entitySet.removeGeomType(QgsWkbTypes.PointGeometry)
                   if self.checkLineLayer == False:
-                     entitySet.removeGeomType(QGis.Line)
+                     entitySet.removeGeomType(QgsWkbTypes.LineGeometry)
                   if self.checkPolygonLayer == False:
-                     entitySet.removeGeomType(QGis.Polygon)
+                     entitySet.removeGeomType(QgsWkbTypes.PolygonGeometry)
                   # controllo sulle quotature
                   if self.checkDimLayers == False:
                      QadDimStyles.removeAllDimLayersFromEntitySet(entitySet)
@@ -675,12 +678,14 @@ class QadSSGetClass(QadCommandClass):
             elif value == QadMsg.translate("Command_SSGET", "Help") or value == "Help":
                self.help = True
                self.WaitForFirstPoint()
-         elif type(value) == QgsPoint: # se é stato inserito il punto iniziale del rettangolo
+         elif type(value) == QgsPointXY: # se é stato inserito il punto iniziale del rettangolo
             self.currSelectionMode = QadMsg.translate("Command_SSGET", "Box")
-            self.points.append(value)           
+            self.points.append(value)
+            
             self.getPointMapTool().setSelectionMode(QadGetPointSelectionModeEnum.ENTITYSET_SELECTION)
             self.getPointMapTool().setDrawMode(QadGetPointDrawModeEnum.ELASTIC_RECTANGLE)
             self.getPointMapTool().setStartPoint(value)
+            
             # si appresta ad attendere un punto
             self.waitForPoint(QadMsg.translate("Command_SSGET", "Specify opposite corner: "))
             self.step = 3
@@ -720,7 +725,7 @@ class QadSSGetClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
                         
-         if type(value) == QgsPoint:
+         if type(value) == QgsPointXY:
             self.points.append(value)           
             self.getPointMapTool().setSelectionMode(QadGetPointSelectionModeEnum.ENTITYSET_SELECTION)
             self.getPointMapTool().setDrawMode(QadGetPointDrawModeEnum.ELASTIC_RECTANGLE)
@@ -769,7 +774,7 @@ class QadSSGetClass(QadCommandClass):
             shiftKey = False
             value = msg
                         
-         if type(value) == QgsPoint:
+         if type(value) == QgsPointXY:
             self.getPointMapTool().clear()
             self.points.append(value)
             

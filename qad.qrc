@@ -1,53 +1,54 @@
 <RCC>
     <qresource prefix="/plugins/qad">
         <file>icons/arc.png</file>
-        <file>icons/arcBy3Points.png</file>
-        <file>icons/arcByCenterStartAngle.png</file>
-        <file>icons/arcByCenterStartEnd.png</file>
-        <file>icons/arcByCenterStartLength.png</file>
-        <file>icons/arcByStartCenterAngle.png</file>
-        <file>icons/arcByStartCenterEndPoints.png</file>
-        <file>icons/arcByStartCenterLength.png</file>
-        <file>icons/arcByStartEndAngle.png</file>
-        <file>icons/arcByStartEndRadius.png</file>
-        <file>icons/arcByStartEndTan.png</file>
+        <file>icons/arcBy3Points.svg</file>
+        <file>icons/arcByCenterStartAngle.svg</file>
+        <file>icons/arcByCenterStartEnd.svg</file>
+        <file>icons/arcByCenterStartLength.svg</file>
+        <file>icons/arcByStartCenterAngle.svg</file>
+        <file>icons/arcByStartCenterEndPoints.svg</file>
+        <file>icons/arcByStartCenterLength.svg</file>
+        <file>icons/arcByStartEndAngle.svg</file>
+        <file>icons/arcByStartEndRadius.svg</file>
+        <file>icons/arcByStartEndTan.svg</file>
         <file>icons/arrayRect.png</file>
         <file>icons/arrayPath.png</file>
         <file>icons/arrayPolar.png</file>
         <file>icons/break.png</file>
         <file>icons/breakBy1Point.png</file>
         <file>icons/circle.png</file>
-        <file>icons/circleBy2Points.png</file>
-        <file>icons/circleBy2TansRadius.png</file>
-        <file>icons/circleBy3Points.png</file>
-        <file>icons/circleBy3Tans.png</file>
-        <file>icons/circleByCenterDiameter.png</file>
-        <file>icons/circleByCenterRadius.png</file>
+        <file>icons/circleBy2Points.svg</file>
+        <file>icons/circleBy2TansRadius.svg</file>
+        <file>icons/circleBy3Points.svg</file>
+        <file>icons/circleBy3Tans.svg</file>
+        <file>icons/circleByCenterDiameter.svg</file>
+        <file>icons/circleByCenterRadius.svg</file>
         <file>icons/copy.png</file>
         <file>icons/copyEnt.png</file>
         <file>icons/dimAligned.png</file>
         <file>icons/dimArc.png</file>
         <file>icons/dimLinear.png</file>
+        <file>icons/dimRadius.png</file>
         <file>icons/dimStyle.png</file>
         <file>icons/divide.png</file>
-        <file>icons/disjoin.png</file>
-        <file>icons/dsettings.png</file>
+        <file>icons/disjoin.svg</file>
+        <file>icons/dsettings.svg</file>
         <file>icons/erase.png</file>
         <file>icons/extend.png</file>
         <file>icons/fillet.png</file>
-        <file>icons/help.png</file>
-        <file>icons/insert.png</file>
-        <file>icons/join.png</file>
+        <file>icons/help.svg</file>
+        <file>icons/point.svg</file>
+        <file>icons/join.svg</file>
         <file>icons/lengthen.png</file>
-        <file>icons/line.png</file>
+        <file>icons/line.svg</file>
         <file>icons/mapmpedit.png</file>
-        <file>icons/mbuffer.png</file>
+        <file>icons/mbuffer.svg</file>
         <file>icons/measure.png</file>
         <file>icons/mirror.png</file>
         <file>icons/move.png</file>
-        <file>icons/mpolygon.png</file>
+        <file>icons/mpolygon.svg</file>
         <file>icons/offset.png</file>
-        <file>icons/options.png</file>
+        <file>icons/options.svg</file>
         <file>icons/osnap_cen.png</file>
         <file>icons/osnap_disable.png</file>
         <file>icons/osnap_end.png</file>
@@ -64,20 +65,21 @@
         <file>icons/osnap_qua.png</file>
         <file>icons/osnap_tan.png</file>
         <file>icons/pedit.png</file>
-        <file>icons/pline.png</file>
-        <file>icons/polygon.png</file>
-        <file>icons/qad.png</file>
-        <file>icons/rectangle.png</file>
-        <file>icons/redo.png</file>
+        <file>icons/pline.svg</file>
+        <file>icons/polygon.svg</file>
+        <file>icons/qad.svg</file>
+        <file>icons/rectangle.svg</file>
+        <file>icons/redo.svg</file>
         <file>icons/rotate.png</file>
-        <file>icons/setcurrlayerbygraph.png</file>
-        <file>icons/setcurrupdateablelayerbygraph.png</file>
+        <file>icons/setcurrlayerbygraph.svg</file>
+        <file>icons/setcurrupdateablelayerbygraph.svg</file>
         <file>icons/scale.png</file>
         <file>icons/stretch.png</file>
-        <file>icons/text.png</file>
+        <file>icons/text.svg</file>
         <file>icons/trim.png</file>
-        <file>icons/u.png</file>
-        <file>icons/undo.png</file>
+        <file>icons/undo.svg</file>
         <file>icons/variable.png</file>
-    </qresource>    
+        <file>icons/locked.png</file>
+        <file>icons/down_key.png</file>
+    </qresource>
 </RCC>

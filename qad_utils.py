@@ -1,30 +1,23 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- funzioni varie di utilità
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QToolTip,QMessageBox
 from qgis.core import *
 from qgis.gui import *
 import qgis.utils
@@ -34,16 +27,16 @@ import math
 import sys
 import string
 from ctypes import *
-import ConfigParser
+from configparser import ConfigParser,RawConfigParser,_default_dict
 import time
 
 
-from qad_variables import *
-from qad_snapper import *
-from qad_msg import QadMsg
-from qad_circle import *
-from qad_arc import *
-from qad_entity import *
+from .qad_variables import *
+from .qad_snapper import *
+from .qad_msg import QadMsg
+from .qad_circle import *
+from .qad_arc import *
+from .qad_entity import *
 
 
 # Modulo che gestisce varie funzionalità di Qad
@@ -53,6 +46,123 @@ from qad_entity import *
 # TOLERANCE = variabile globale
 #===============================================================================
 TOLERANCE = 1.e-7
+
+
+#===============================================================================
+# FUNZIONI GENERICHE PER I WIDGET - INIZIO
+#===============================================================================
+
+
+#===============================================================================
+# setMapCanvasToolTip
+#===============================================================================
+# visualizza il testo della tooltip del mapCanvas con l'aspetto determinato da DYNTOOLTIPS
+def setMapCanvasToolTip(msg):
+   canvas = qgis.utils.iface.mapCanvas()
+   pt = canvas.mapToGlobal(canvas.mouseLastXY())
+   
+   if QadVariables.get(QadMsg.translate("Environment variables", "DYNTOOLTIPS")) == 1:
+      font_size = 8 + QadVariables.get(QadMsg.translate("Environment variables", "TOOLTIPSIZE"))
+
+      #opacity = 100 - QadVariables.get(QadMsg.translate("Environment variables", "TOOLTIPTRANSPARENCY"))
+      #fc.setAlphaF(opacity/100.0) # non va
+      
+      fColor = QColor(QadVariables.get(QadMsg.translate("Environment variables", "DYNEDITFORECOLOR")))
+      bColor = QColor(QadVariables.get(QadMsg.translate("Environment variables", "DYNEDITBACKCOLOR")))
+   else:
+      font_size = QFont().pointSize()
+      p = QPalette()
+      fColor = p.color(QPalette.Inactive, QPalette.ToolTipText)
+      bColor = p.color(QPalette.Inactive, QPalette.ToolTipBase)
+
+   toolTipFont = QToolTip.font()
+   if toolTipFont.pointSize() != font_size:
+      toolTipFont.setPointSize(font_size)
+      QToolTip.setFont(toolTipFont)
+
+   toolTipPalette = QToolTip.palette()
+   if toolTipPalette.color(QPalette.Inactive, QPalette.ToolTipText) != fColor or \
+      toolTipPalette.color(QPalette.Inactive, QPalette.ToolTipBase) != bColor:
+      toolTipPalette.setColor(QPalette.Inactive, QPalette.ToolTipText, fColor)
+      toolTipPalette.setColor(QPalette.Inactive, QPalette.ToolTipBase, bColor)
+      QToolTip.setPalette(toolTipPalette)
+
+   QToolTip.showText(pt, msg)
+   
+   return
+
+
+#===============================================================================
+# floatLineEditWidgetValidation
+#===============================================================================
+# controlla che il valore di un widget di tipo line edit soddisfi l'intervallo ammesso per la variabile di ambiente
+def intLineEditWidgetValidation(widget, var, msg):
+   err = False
+   string = widget.text()
+   if str2int(string) is None:
+      err = True
+   else:
+      if var.minNum is not None:
+         if str2int(string) < var.minNum:
+            err = True
+      if var.maxNum is not None:
+         if str2int(string) > var.maxNum:
+            err = True
+   
+   if err:
+      msg = msg + QadMsg.translate("QAD", ": enter a number")
+      if var.minNum is not None:
+         msg = msg + QadMsg.translate("QAD", " >= {0}").format(str(var.minNum))
+      if var.maxNum is not None:
+         if var.minNum is not None:
+            msg = msg + QadMsg.translate("QAD", " and")
+         msg = msg + QadMsg.translate("QAD", " <= {0}").format(str(var.maxNum))
+      msg = msg + "."
+      QMessageBox.critical(None, "QAD", msg)
+      widget.setFocus()
+      widget.selectAll()
+      return False
+   return True
+
+
+#===============================================================================
+# floatLineEditWidgetValidation
+#===============================================================================
+# controlla che il valore di un widget di tipo line edit soddisfi l'intervallo ammesso per la variabile di ambiente
+def floatLineEditWidgetValidation(widget, var, msg):
+   err = False
+   string = widget.text()
+   if str2float(string) is None:
+      err = True
+   else:
+      if var.minNum is not None:
+         if str2float(string) < var.minNum:
+            err = True
+      if var.maxNum is not None:
+         if str2float(string) > var.maxNum:
+            err = True
+   
+   if err:
+      msg = msg + QadMsg.translate("QAD", ": enter a number")
+      if var.minNum is not None:
+         minValMsg = msg + QadMsg.translate("QAD", " > {0}").format(str(var.minNum))
+      else:
+         minValMsg = ""
+      if var.maxNum is not None:
+         if len(minValMsg) > 0:
+            msg = msg + QadMsg.translate("QAD", " and")
+         msg = msg + QadMsg.translate("QAD", " < {0}").format(str(var.maxNum))
+      msg = msg + "."
+      QMessageBox.critical(None, "QAD", msg)
+      widget.setFocus()
+      widget.selectAll()
+      return False
+   return True
+
+
+#===============================================================================
+# FUNZIONI GENERICHE PER I WIDGET - FINE
+#===============================================================================
 
 
 #===============================================================================
@@ -197,7 +307,7 @@ def str2bool(s):
 #===============================================================================
 # str2QgsPoint
 #===============================================================================
-def str2QgsPoint(s, lastPoint = None, currenPoint = None, oneNumberAllowed = True):
+def str2QgsPointXY(s, lastPoint = None, currenPoint = None, oneNumberAllowed = True):
    """
    Ritorna la conversione di una stringa in punto QgsPoint
    se <oneNumberAllowed> = False significa che s non può essere un solo numero
@@ -226,7 +336,7 @@ def str2QgsPoint(s, lastPoint = None, currenPoint = None, oneNumberAllowed = Tru
          OffSetY = str2float(coords[1].strip())
          if (OffSetX is None) or (OffSetY is None):
             return None
-         return QgsPoint(lastPoint.x() + OffSetX, lastPoint.y() + OffSetY)
+         return QgsPointXY(lastPoint.x() + OffSetX, lastPoint.y() + OffSetY)
       else:
          if len(coords) != 1:
             return None
@@ -240,13 +350,13 @@ def str2QgsPoint(s, lastPoint = None, currenPoint = None, oneNumberAllowed = Tru
          if (dist is None) or (angle is None):
             return None     
          coords = getPolarPointByPtAngle(lastPoint, math.radians(angle), dist)     
-         return QgsPoint(coords[0], coords[1])
+         return QgsPointXY(coords[0], coords[1])
    else:
       # verifico se è specificato un CRS
       CRS, newExpr = strFindCRS(expression)
       if CRS is not None:
-         if CRS.geographicFlag():
-            pt = strLatLon2QgsPoint(newExpr)
+         if CRS.isGeographic():
+            pt = strLatLon2QgsPointXY(newExpr)
          else:               
             coords = newExpr.split(",")
             if len(coords) != 2:
@@ -255,11 +365,11 @@ def str2QgsPoint(s, lastPoint = None, currenPoint = None, oneNumberAllowed = Tru
             y = str2float(coords[1].strip())
             if (x is None) or (y is None):
                return None
-            pt = QgsPoint(x, y)
+            pt = QgsPointXY(x, y)
             
          if pt is not None:
             destCRS = qgis.utils.iface.mapCanvas().mapSettings().destinationCrs() # CRS corrente
-            return QgsCoordinateTransform(CRS, destCRS).transform(pt) # trasformo le coord
+            return QgsCoordinateTransform(CRS, destCRS,QgsProject.instance()).transform(pt) # trasformo le coord
 
 
       coords = expression.split(",")
@@ -268,7 +378,7 @@ def str2QgsPoint(s, lastPoint = None, currenPoint = None, oneNumberAllowed = Tru
          y = str2float(coords[1].strip())
          if (x is None) or (y is None):
             return None
-         return QgsPoint(x, y)
+         return QgsPointXY(x, y)
       else:
          if oneNumberAllowed == False: # vietato che la stringa sia un solo numero
             return None
@@ -280,17 +390,51 @@ def str2QgsPoint(s, lastPoint = None, currenPoint = None, oneNumberAllowed = Tru
          
          angle = getAngleBy2Pts(lastPoint, currenPoint)
          coords = getPolarPointByPtAngle(lastPoint, angle, dist)     
-         return QgsPoint(coords[0], coords[1])
+         return QgsPointXY(coords[0], coords[1])
 
 
 #===============================================================================
-# QgsPointToString
+# pointToStringFmt
 #===============================================================================
-def QgsPointToString(pt):
+def pointToStringFmt(pt):
    """
-   Ritorna la conversione di un punto QgsPoint in stringa
-   """   
-   return pt.toString()
+   Ritorna la conversione di un punto QgsPointXY in stringa formattata
+   """
+   return numToStringFmt(pt.x()) + "," + numToStringFmt(pt.y())
+
+
+#===============================================================================
+# numToStringFmt
+#===============================================================================
+def numToStringFmt(n, textDecimals = 4, textDecimalSep = '.', \
+                      textSuppressLeadingZeros = False, textDecimalZerosSuppression = True,
+                      textPrefix = "", textSuffix = ""):
+   """
+   Restituisce la conversione di un numero (int o float) in stringa formattata
+   """
+   strIntPart, strDecPart = qad_utils.getStrIntDecParts(round(n, textDecimals)) # numero di decimali
+   
+   if strIntPart == "0" and textSuppressLeadingZeros == True: # per sopprimere o meno gli zero all'inizio del testo
+      strIntPart = ""
+
+   if str(strDecPart).isnumeric():
+      intDecPart = int(strDecPart)
+   else:
+      intDecPart = len(strDecPart)
+
+   for i in range(0, textDecimals - intDecPart, 1):  # aggiunge "0" per arrivare al numero di decimali
+      strDecPart = str(strDecPart) + "0"
+      
+   if textDecimalZerosSuppression == True: # per sopprimere gli zero finali nei decimali
+      strDecPart = str(strDecPart).rstrip("0")
+   
+   formattedText = "-" if n < 0 else "" # segno
+   formattedText = formattedText + str(strIntPart) # parte intera
+   if len(strDecPart) > 0: # parte decimale
+      formattedText = formattedText + textDecimalSep + str(strDecPart) # Separatore dei decimali
+   # aggiungo prefisso e suffisso per il testo della quota
+   return textPrefix + formattedText + textSuffix
+
 
 #===============================================================================
 # strLatLon2QgsPoint
@@ -302,10 +446,10 @@ def strFindCRS(s):
    racchiuso tra parentesi tonde (es "111,222 (EPSG:3003)")
    Ritorna il SR e la stringa depurata del SR (es "111,222")
    """
-   initial = string.find(s, "(")
+   initial = s.find("(")
    if initial == -1:
       return None, s
-   final = string.find(s, ")")
+   final = s.find(")")
    if initial > final:
       return None, s
    authId = s[initial+1:final]
@@ -316,7 +460,7 @@ def strFindCRS(s):
 #===============================================================================
 # strLatLon2QgsPoint
 #===============================================================================
-def strLatLon2QgsPoint(s):
+def strLatLon2QgsPointXY(s):
    """
    Ritorna la conversione di una stringa contenente una coordinata in latitudine longitudine
    in punto QgsPoint.
@@ -398,9 +542,9 @@ def strLatLon2QgsPoint(s):
       else:
          return None
          
-      return QgsPoint(lon, lat)
+      return QgsPointXY(lon, lat)
    else: # latitude first
-      return QgsPoint(lon, lat)
+      return QgsPointXY(lon, lat)
 
 
 #===============================================================================
@@ -489,7 +633,7 @@ def getStrIntDecParts(n):
    """
    Restituisce due stringhe rappresentanti la parte intera senza segno e la parte decimale di un numero
    """
-   if type(n) == int or type(n) == float:
+   if type(n) == int or type(n) == long or type(n) == float:
       nStr = str(n)
       if "." in nStr:
          parts = nStr.split(".")
@@ -508,8 +652,8 @@ def distMapToLayerCoordinates(dist, canvas, layer):
    boundBox = canvas.extent()
    x = (boundBox.xMinimum() + boundBox.xMaximum()) / 2
    y = (boundBox.yMinimum() + boundBox.yMaximum()) / 2
-   pt1 = QgsPoint(x, y)
-   pt2 = QgsPoint(x + dist, y)
+   pt1 = QgsPointXY(x, y)
+   pt2 = QgsPointXY(x + dist, y)
    transformedPt1 = canvas.mapSettings().mapToLayerCoordinates(layer, pt1)
    transformedPt2 = canvas.mapSettings().mapToLayerCoordinates(layer, pt2)
    return getDistance(transformedPt1, transformedPt2)
@@ -531,16 +675,16 @@ def filterFeaturesByType(features, filterByGeomType):
    resultLine = []
    resultPolygon = []
 
-   for i in xrange(len(features) - 1, -1, -1): 
+   for i in range(len(features) - 1, -1, -1):
       f = features[i]
       g = f.geometry()
       geomType = g.type()
       if geomType != filterByGeomType:
-         if geomType == QGis.Point:      
+         if geomType == QgsWkbTypes.Point:
             resultPoint.append(QgsGeometry(g))
-         elif geomType == QGis.Line:      
+         elif geomType == QgsWkbTypes.LineGeometry:
             resultLine.append(QgsGeometry(g))
-         elif geomType == QGis.Polygon:      
+         elif geomType == QgsWkbTypes.Polygon:
             resultPolygon.append(QgsGeometry(g))
          del features[i]
 
@@ -563,15 +707,15 @@ def filterGeomsByType(geoms, filterByGeomType):
    resultLine = []
    resultPolygon = []
 
-   for i in xrange(len(geoms) - 1, -1, -1): 
+   for i in range(len(geoms) - 1, -1, -1):
       g = geoms[i]
       geomType = g.type()
       if geomType != filterByGeomType:            
-         if geomType == QGis.Point:      
+         if geomType == QgsWkbTypes.Point:
             resultPoint.append(QgsGeometry(g))
-         elif geomType == QGis.Line:      
+         elif geomType == QgsWkbTypes.LineGeometry:
             resultLine.append(QgsGeometry(g))
-         elif geomType == QGis.Polygon:      
+         elif geomType == QgsWkbTypes.Polygon:
             resultPolygon.append(QgsGeometry(g))
          del geoms[i]
 
@@ -697,7 +841,7 @@ def getFeatureRequest(fetchAttributes = [], fetchGeometry = True, \
 def getVisibleVectorLayers(canvas):
    # Tutti i layer vettoriali visibili
    layers = canvas.layers()
-   for i in xrange(len(layers) - 1, -1, -1):
+   for i in range(len(layers) - 1, -1, -1):
       # se il layer non è vettoriale o non è visibile a questa scala
       if layers[i].type() != QgsMapLayer.VectorLayer or \
          layers[i].hasScaleBasedVisibility() and \
@@ -750,9 +894,9 @@ def getEntSel(point, mQgsMapTool, boxSize, \
          (onlyEditableLayers == False or firstLayerToCheck.isEditable()) and \
          (firstLayerToCheck.hasScaleBasedVisibility() == False or \
           (mQgsMapTool.canvas.mapSettings().scale() >= firstLayerToCheck.minimumScale() and mQgsMapTool.canvas.mapSettings().scale() <= firstLayerToCheck.maximumScale())) and \
-         ((firstLayerToCheck.geometryType() == QGis.Point and checkPointLayer == True) or \
-          (firstLayerToCheck.geometryType() == QGis.Line and checkLineLayer == True) or \
-          (firstLayerToCheck.geometryType() == QGis.Polygon and checkPolygonLayer == True)):
+         ((firstLayerToCheck.geometryType() == QgsWkbTypes.PointGeometry and checkPointLayer == True) or \
+          (firstLayerToCheck.geometryType() == QgsWkbTypes.LineGeometry and checkLineLayer == True) or \
+          (firstLayerToCheck.geometryType() == QgsWkbTypes.PolygonGeometry and checkPolygonLayer == True)):
          # restituisce feature, point
          res = getEntSelOnLayer(point, mQgsMapTool, boxSize, firstLayerToCheck, onlyBoundary, layerCacheGeomsDict, returnFeatureCached)
          if res is not None:
@@ -766,9 +910,9 @@ def getEntSel(point, mQgsMapTool, boxSize, \
       # considero solo i layer vettoriali che sono filtrati per tipo
       if layer.type() == QgsMapLayer.VectorLayer and \
           (onlyEditableLayers == False or layer.isEditable()) and \
-          ((layer.geometryType() == QGis.Point and checkPointLayer == True) or \
-           (layer.geometryType() == QGis.Line and checkLineLayer == True) or \
-           (layer.geometryType() == QGis.Polygon and checkPolygonLayer == True)):
+          ((layer.geometryType() == QgsWkbTypes.PointGeometry and checkPointLayer == True) or \
+           (layer.geometryType() == QgsWkbTypes.LineGeometry and checkLineLayer == True) or \
+           (layer.geometryType() == QgsWkbTypes.PolygonGeometry and checkPolygonLayer == True)):
          # restituisce feature, point
          res = getEntSelOnLayer(point, mQgsMapTool, boxSize, layer, onlyBoundary, layerCacheGeomsDict, returnFeatureCached)
          if res is not None:
@@ -810,7 +954,7 @@ def getEntSelOnLayer(point, mQgsMapTool, boxSize, layer, onlyBoundary = True, \
       
       for cachedFeature in cachedFeatures:
          # se é un layer contenente poligoni allora verifico se considerare solo i bordi
-         if onlyBoundary == False or layer.geometryType() != QGis.Polygon:
+         if onlyBoundary == False or layer.geometryType() != QgsWkbTypes.PolygonGeometry:
             if cachedFeature.geometry().intersects(selectRect):
                if returnFeatureCached: # ritorna la feature della cache
                   return cachedFeature, point
@@ -842,7 +986,7 @@ def getEntSelOnLayer(point, mQgsMapTool, boxSize, layer, onlyBoundary = True, \
       feature = QgsFeature()
    
       # se é un layer contenente poligoni allora verifico se considerare solo i bordi
-      if onlyBoundary == False or layer.geometryType() != QGis.Polygon:
+      if onlyBoundary == False or layer.geometryType() != QgsWkbTypes.PolygonGeometry:
          for feature in featureIterator:
             return feature, point
       else:
@@ -895,14 +1039,14 @@ def isGeomInBox(point, mQgsMapTool, geom, boxSize, crs = None, \
       return False
    
    # considero solo la geometria filtrata per tipo
-   if ((geom.type() == QGis.Point and checkPointLayer == True) or \
-       (geom.type() == QGis.Line and checkLineLayer == True) or \
-       (geom.type() == QGis.Polygon and checkPolygonLayer == True)):      
+   if ((geom.type() == QgsWkbTypes.Point and checkPointLayer == True) or \
+       (geom.type() == QgsWkbTypes.LineGeometry and checkLineLayer == True) or \
+       (geom.type() == QgsWkbTypes.Polygon and checkPolygonLayer == True)):
       mapPoint = mQgsMapTool.toMapCoordinates(point)
       mapGeom = QgsGeometry(geom)
       if crs is not None and mQgsMapTool.canvas.mapSettings().destinationCrs() != crs:
          # trasformo le coord della geometria in map coordinates
-         coordTransform = QgsCoordinateTransform(crs, mQgsMapTool.canvas.mapSettings().destinationCrs())          
+         coordTransform = QgsCoordinateTransform(crs, mQgsMapTool.canvas.mapSettings().destinationCrs(),QgsProject.instance())
          mapGeom.transform(coordTransform)      
          
       ToleranceInMapUnits = boxSize * mQgsMapTool.canvas.mapSettings().mapUnitsPerPixel()
@@ -910,7 +1054,7 @@ def isGeomInBox(point, mQgsMapTool, geom, boxSize, crs = None, \
                                 mapPoint.x() + ToleranceInMapUnits, mapPoint.y() + ToleranceInMapUnits)
                                            
       # se é una geometria poligono allora verifico se considerare solo i bordi
-      if onlyBoundary == False or geom.type() != QGis.Polygon:
+      if onlyBoundary == False or geom.type() != QgsWkbTypes.Polygon:
          if mapGeom.intersects(selectRect):
             return True
       else:
@@ -980,11 +1124,14 @@ def deselectAll(layers):
    """
    la funzione deseleziona tutte le entità selezionate nei layer
    """
-   selFeatureIds = []
    for layer in layers: # ciclo sui layer
       if (layer.type() == QgsMapLayer.VectorLayer):
-         if layer.selectedFeaturesIds() > 0:
-            layer.setSelectedFeatures(selFeatureIds)
+         layer.removeSelection()
+   #selFeatureIds = []
+   #for layer in layers: # ciclo sui layer
+   #   if (layer.type() == QgsMapLayer.VectorLayer):
+   #      if layer.selectedFeaturesIds() > 0:
+   #         layer.setSelectedFeatures(selFeatureIds)
 
 
 #===============================================================================
@@ -1029,9 +1176,9 @@ def getSelSet(mode, mQgsMapTool, points = None, \
    for layer in _layers: # ciclo sui layer
       # considero solo i layer vettoriali che sono filtrati per tipo
       if (layer.type() == QgsMapLayer.VectorLayer) and \
-          ((layer.geometryType() == QGis.Point and checkPointLayer == True) or \
-           (layer.geometryType() == QGis.Line and checkLineLayer == True) or \
-           (layer.geometryType() == QGis.Polygon and checkPolygonLayer == True)) and \
+          ((layer.geometryType() == QgsWkbTypes.PointGeometry and checkPointLayer == True) or \
+           (layer.geometryType() == QgsWkbTypes.LineGeometry and checkLineLayer == True) or \
+           (layer.geometryType() == QgsWkbTypes.PolygonGeometry and checkPolygonLayer == True)) and \
            (onlyEditableLayers == False or layer.isEditable()):
          provider = layer.dataProvider()  
 
@@ -1066,7 +1213,7 @@ def getSelSet(mode, mQgsMapTool, points = None, \
             for point in points:
                polyline.append(mQgsMapTool.toLayerCoordinates(layer, point))
             
-            g = QgsGeometry.fromPolygon([polyline])
+            g = QgsGeometry.fromPolygonXY([polyline])
             # Select features in the polygon bounding box
             # fetchAttributes, fetchGeometry, rectangle, useIntersect             
             for feature in layer.getFeatures(getFeatureRequest([], True, g.boundingBox(), True)):            
@@ -1079,7 +1226,7 @@ def getSelSet(mode, mQgsMapTool, points = None, \
             for point in points:
                polyline.append(mQgsMapTool.toLayerCoordinates(layer, point))
             
-            g = QgsGeometry.fromPolygon([polyline])
+            g = QgsGeometry.fromPolygonXY([polyline])
             # Select features in the polygon bounding box
             # fetchAttributes, fetchGeometry, rectangle, useIntersect             
             for feature in layer.getFeatures(getFeatureRequest([], True, g.boundingBox(), True)):                       
@@ -1092,12 +1239,12 @@ def getSelSet(mode, mQgsMapTool, points = None, \
             g = QgsGeometry(points)
             if mQgsMapTool.canvas.mapSettings().destinationCrs() != layer.crs():       
                coordTransform = QgsCoordinateTransform(mQgsMapTool.canvas.mapSettings().destinationCrs(), \
-                                                       layer.crs()) # trasformo la geometria
+                                                       layer.crs(),QgsProject.instance()) # trasformo la geometria
                g.transform(coordTransform)
                         
             # Select features in the object bounding box
             wkbType = g.wkbType()            
-            if wkbType == QGis.WKBPoint or wkbType == QGis.WKBPoint25D:   
+            if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
                Tolerance = QadVariables.get(QadMsg.translate("Environment variables", "PICKBOX")) # leggo la tolleranza
                ToleranceInMapUnits = QgsTolerance.toleranceInMapUnits(Tolerance, layer, \
                                                                       mQgsMapTool.canvas.mapSettings(), \
@@ -1124,12 +1271,12 @@ def getSelSet(mode, mQgsMapTool, points = None, \
             g = QgsGeometry(points)
             if mQgsMapTool.canvas.mapSettings().destinationCrs() != layer.crs():       
                coordTransform = QgsCoordinateTransform(mQgsMapTool.canvas.mapSettings().destinationCrs(), \
-                                                       layer.crs()) # trasformo la geometria
+                                                       layer.crs(),QgsProject.instance()) # trasformo la geometria
                g.transform(coordTransform)
 
             # Select features in the object bounding box
             wkbType = g.wkbType()            
-            if wkbType == QGis.WKBPoint or wkbType == QGis.WKBPoint25D:   
+            if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
                Tolerance = QadVariables.get(QadMsg.translate("Environment variables", "PICKBOX")) # leggo la tolleranza
                ToleranceInMapUnits = QgsTolerance.toleranceInMapUnits(Tolerance, layer, \
                                                                       mQgsMapTool.canvas.mapSettings(), \
@@ -1154,7 +1301,7 @@ def getSelSet(mode, mQgsMapTool, points = None, \
             for point in points:
                polyline.append(mQgsMapTool.toLayerCoordinates(layer, point))
                
-            g = QgsGeometry.fromPolyline(polyline)
+            g = QgsGeometry.fromPolylineXY(polyline)
             # Select features in the polyline bounding box
             # fetchAttributes, fetchGeometry, rectangle, useIntersect
             for feature in layer.getFeatures(getFeatureRequest([], True, g.boundingBox(), True)):                       
@@ -1200,37 +1347,37 @@ def getIntersectionPoints(geom1, geom2, checkForCurves = False):
             
    for g1 in geoms1:
       wkbType1 = g1.wkbType()
-      if wkbType1 == QGis.WKBPoint:
+      if wkbType1 == QgsWkbTypes.Point or wkbType1 == QgsWkbTypes.PointZ:
          pt1 = g1.asPoint()
          for g2 in geoms2:
             wkbType2 = g2.wkbType()
-            if wkbType2 == QGis.WKBPoint:
+            if wkbType2 == QgsWkbTypes.Point or wkbType2 == QgsWkbTypes.PointZ:
                if ptNear(pt1, g2.asPoint()):
                   appendUniquePointToList(result, pt1)
-            elif wkbType2 == QGis.WKBLineString:
+            elif wkbType2 == QgsWkbTypes.LineString or wkbType2 == QgsWkbTypes.LineStringZ:
                points2 = g2.asPolyline()
                p2Start = points2[0]
-               for i in xrange(1, len(points2), 1):
+               for i in range(1, len(points2), 1):
                   p2End = points2[i]                  
                   if isPtOnSegment(p2Start, p2End, pt1):
                      appendUniquePointToList(result, pt1)
                      break
                   p2Start = p2End
-      elif wkbType1 == QGis.WKBLineString:
+      elif wkbType1 == QgsWkbTypes.LineString or wkbType1 == QgsWkbTypes.LineStringZ:
          points1 = g1.asPolyline()
          p1Start = points1[0]
-         for i in xrange(1, len(points1), 1):
+         for i in range(1, len(points1), 1):
             p1End = points1[i]            
             for g2 in geoms2:
                wkbType2 = g2.wkbType()
-               if wkbType2 == QGis.WKBPoint:
+               if wkbType2 == QgsWkbTypes.Point or wkbType2 == QgsWkbTypes.PointZ:
                   pt2 = g2.asPoint()
                   if isPtOnSegment(p1Start, p1End, pt2):
                      appendUniquePointToList(result, pt2)
-               elif wkbType2 == QGis.WKBLineString:
+               elif wkbType2 == QgsWkbTypes.LineString or wkbType2 == QgsWkbTypes.LineStringZ:
                   points2 = g2.asPolyline()
                   p2Start = points2[0]
-                  for i in xrange(1, len(points2), 1):
+                  for i in range(1, len(points2), 1):
                      p2End = points2[i]                  
                      intPt = getIntersectionPointOn2Segments(p1Start, p1End,p2Start, p2End)                     
                      if intPt is not None:
@@ -1258,21 +1405,21 @@ def getLinePart(geom, ptStart, ptEnd):
    geomPtStart = QgsGeometry.fromPoint(ptStart)       
    geomPtEnd = QgsGeometry.fromPoint(ptEnd)
    
-   isPolygon = True if geom.wkbType() == QGis.WKBPolygon else False
+   isPolygon = True if (geom.wkbType() == QgsWkbTypes.Polygon or geom.wkbType() == QgsWkbTypes.PolygonZ) else False
    
    # Riduco le geometrie in point o polyline
    geoms = asPointOrPolyline(geom)
             
    for g in geoms:
-      if g.wkbType() == QGis.WKBPoint:
+      if g.wkbType() == QgsWkbTypes.Point or g.wkbType() == QgsWkbTypes.PointZ:
          continue
       points = g.asPolyline()
       totalSegment = len(points) - 1
 
       # cerco il segmento che contiene il punto iniziale
       found = False
-      for segmentStart in xrange(0, totalSegment, 1):
-         geomSegment = QgsGeometry.fromPolyline([points[segmentStart], points[segmentStart + 1]])
+      for segmentStart in range(0, totalSegment, 1):
+         geomSegment = QgsGeometry.fromPolylineXY([points[segmentStart], points[segmentStart + 1]])
          # se ci sono punti di intersezione
          if len(getIntersectionPoints(geomSegment, geomPtStart)) > 0:
             found = True
@@ -1282,8 +1429,8 @@ def getLinePart(geom, ptStart, ptEnd):
 
       # cerco il segmento che contiene il punto finale
       found = False
-      for segmentEnd in xrange(0, totalSegment, 1):
-         geomSegment = QgsGeometry.fromPolyline([points[segmentEnd], points[segmentEnd + 1]])
+      for segmentEnd in range(0, totalSegment, 1):
+         geomSegment = QgsGeometry.fromPolylineXY([points[segmentEnd], points[segmentEnd + 1]])
          # se ci sono punti di intersezione
          if len(getIntersectionPoints(geomSegment, geomPtEnd)) > 0:
             found = True
@@ -1299,7 +1446,7 @@ def getLinePart(geom, ptStart, ptEnd):
             if ptStart == points[segmentStart + 1]:
                segmentStart = segmentStart + 1
             
-            for i in xrange(segmentStart + 1, segmentEnd + 1, 1):
+            for i in range(segmentStart + 1, segmentEnd + 1, 1):
                result.append(points[i])
                   
          elif segmentStart > segmentEnd:
@@ -1307,7 +1454,7 @@ def getLinePart(geom, ptStart, ptEnd):
             if ptEnd == points[segmentEnd + 1]:
                segmentEnd = segmentEnd + 1
             
-            for i in xrange(segmentStart, segmentEnd, -1):
+            for i in range(segmentStart, segmentEnd, -1):
                result.append(points[i])
                
          result.append(ptEnd)     
@@ -1351,8 +1498,8 @@ def getLinePart(geom, ptStart, ptEnd):
                
          result2.append(ptEnd)
          
-         g1 = QgsGeometry.fromPolyline(result1)
-         g2 = QgsGeometry.fromPolyline(result2)
+         g1 = QgsGeometry.fromPolylineXY(result1)
+         g2 = QgsGeometry.fromPolylineXY(result2)
          
          result = result1 if g1.length() < g2.length() else result2
       
@@ -1374,15 +1521,15 @@ def getPerpendicularPointOnInfinityLine(p1, p2, pt):
    diffY = p2.y() - p1.y()
                           
    if doubleNear(diffX, 0): # se la retta passante per p1 e p2 é verticale
-      return QgsPoint(p1.x(), pt.y())
+      return QgsPointXY(p1.x(), pt.y())
    elif doubleNear(diffY, 0): # se la retta passante per p1 e p2 é orizzontale
-      return QgsPoint(pt.x(), p1.y())
+      return QgsPointXY(pt.x(), p1.y())
    else:
       coeff = diffY / diffX
       x = (coeff * p1.x() - p1.y() + pt.x() / coeff + pt.y()) / (coeff + 1 / coeff)
       y = coeff * (x - p1.x()) + p1.y()
       
-      return QgsPoint(x, y)
+      return QgsPointXY(x, y)
 
 
 #===============================================================================
@@ -1717,7 +1864,7 @@ def getMiddlePoint(p1, p2):
    x = (p1.x() + p2.x()) / 2
    y = (p1.y() + p2.y()) / 2
    
-   return QgsPoint(x, y)
+   return QgsPointXY(x, y)
 
 
 #===============================================================================
@@ -1824,6 +1971,9 @@ def isPtOnSegment(p1, p2, point):
    else:
       xMax = p1.x()
       xMin = p2.x()
+	  
+   # verifico se il punto può essere sul segmento 22/07/2017
+   if doubleSmaller(point.x(), xMin) or doubleGreater(point.x(), xMax): return False
       
    if p1.y() < p2.y():
       yMin = p1.y()
@@ -1832,19 +1982,16 @@ def isPtOnSegment(p1, p2, point):
       yMax = p1.y()
       yMin = p2.y()
 
+   # verifico se il punto può essere sul segmento 22/07/2017
+   if doubleSmaller(point.y(), yMin) or doubleGreater(point.y(), yMax): return False
+	  
    y = getYOnInfinityLine(p1, p2, point.x())
    if y is None: # il segmento p1-p2 é verticale
-      if (doubleNear(point.x(), xMin)) and \
-         (point.y() < yMax or doubleNear(point.y(), yMax)) and \
-         (point.y() > yMin or doubleNear(point.y(), yMin)):
-         return True
+      return True
    else:
       # se il punto é sulla linea infinita che passa da p1-p2
       if doubleNear(point.y(), y):
-         # se la coordinata x é compresa nel segmento
-         if (point.x() > xMin or doubleNear(point.x(), xMin)) and \
-            (point.x() < xMax or doubleNear(point.x(), xMax)):
-            return True
+         return True
          
    return False  
 
@@ -1889,13 +2036,13 @@ def getIntersectionPointOn2InfinityLines(line1P1, line1P2, line2P1, line2P2):
       return None # sono parallele
 
    if doubleNear(line1DiffX, 0): # se la retta1 é verticale
-      return QgsPoint(line1P2.x(), getYOnInfinityLine(line2P1, line2P2, line1P2.x()))
+      return QgsPointXY(line1P2.x(), getYOnInfinityLine(line2P1, line2P2, line1P2.x()))
    if doubleNear(line1DiffY, 0): # se la retta1 é orizzontale
-      return QgsPoint(getXOnInfinityLine(line2P1, line2P2, line1P2.y()), line1P2.y())
+      return QgsPointXY(getXOnInfinityLine(line2P1, line2P2, line1P2.y()), line1P2.y())
    if doubleNear(line2DiffX, 0): # se la retta2 é verticale
-      return QgsPoint(line2P2.x(), getYOnInfinityLine(line1P1, line1P2, line2P2.x()))
+      return QgsPointXY(line2P2.x(), getYOnInfinityLine(line1P1, line1P2, line2P2.x()))
    if doubleNear(line2DiffY, 0): # se la retta2 é orizzontale
-      return QgsPoint(getXOnInfinityLine(line1P1, line1P2, line2P2.y()), line2P2.y())
+      return QgsPointXY(getXOnInfinityLine(line1P1, line1P2, line2P2.y()), line2P2.y())
 
    line1Coeff = line1DiffY / line1DiffX
    line2Coeff = line2DiffY / line2DiffX
@@ -1911,7 +2058,7 @@ def getIntersectionPointOn2InfinityLines(line1P1, line1P2, line2P1, line2P2):
    x = x / D
    y = (x - line1P1.x()) * line1Coeff + line1P1.y()
    
-   return QgsPoint(x, y)
+   return QgsPointXY(x, y)
 
 
 #===============================================================================
@@ -1922,11 +2069,46 @@ def getIntersectionPointOn2Segments(line1P1, line1P2, line2P1, line2P2):
    la funzione ritorna il punto di intersezione tra il segmento1 avente come estremi line1P1-line1P2 e
     il segmento2 avente come estremi line2P1-line2P2.
    """
+   # verifico se ci può essere intersezione tra i due segmenti 22/07/2017
+   if line1P1.x() > line1P2.x():
+      xMaxLine1 = line1P1.x()
+      xMinLine1 = line1P2.x()
+   else:
+      xMaxLine1 = line1P2.x()
+      xMinLine1 = line1P1.x()
+	  
+   if line2P1.x() > line2P2.x():
+      xMaxLine2 = line2P1.x()
+      xMinLine2 = line2P2.x()
+   else:
+      xMaxLine2 = line2P2.x()
+      xMinLine2 = line2P1.x()	  
+	  
+   if doubleSmaller(xMaxLine1, xMinLine2) or doubleGreater(xMinLine1, xMaxLine2): return None
+      
+   if line1P1.y() > line1P2.y():
+      yMaxLine1 = line1P1.y()
+      yMinLine1 = line1P2.y()
+   else:
+      yMaxLine1 = line1P2.y()
+      yMinLine1 = line1P1.y()
+
+   if line2P1.y() > line2P2.y():
+      yMaxLine2 = line2P1.y()
+      yMinLine2 = line2P2.y()
+   else:
+      yMaxLine2 = line2P2.y()
+      yMinLine2 = line2P1.y()	  
+	  
+   if doubleSmaller(yMaxLine1, yMinLine2) or doubleGreater(yMinLine1, yMaxLine2): return None
+
+   
    ptInt = getIntersectionPointOn2InfinityLines(line1P1, line1P2, line2P1, line2P2)
    if ptInt is not None: # se non sono parallele
       # se il punto di intersezione é sui segmenti
-      if isPtOnSegment(line1P1, line1P2, ptInt) and isPtOnSegment(line2P1, line2P2, ptInt):
-         return QgsPoint(ptInt)
+      if doubleGreaterOrEquals(ptInt.x(), xMinLine1) and doubleSmallerOrEquals(ptInt.x(), xMaxLine1) and \
+	     doubleGreaterOrEquals(ptInt.y(), yMinLine2) and doubleSmallerOrEquals(ptInt.y(), yMaxLine2):
+         return QgsPointXY(ptInt)
    else:
       # il segmento line2 si sovrappone a line1
       if isPtOnSegment(line1P1, line1P2, line2P1) == True and \
@@ -1938,10 +2120,10 @@ def getIntersectionPointOn2Segments(line1P1, line1P2, line2P1, line2P2):
          return None
       # se il punto iniziale di line1 coincide con il punto iniziale o finale di line2
       if line1P1 == line2P1 or line1P1 == line2P2:
-         return QgsPoint(line1P1)            
+         return QgsPointXY(line1P1)
       # se il punto finale di line1 coincide con il punto iniziale o finale di line2
       if line1P2 == line2P1 or line1P2 == line2P2:
-         return QgsPoint(line1P2)
+         return QgsPointXY(line1P2)
 
    return None
 
@@ -1987,7 +2169,7 @@ def getPolarPointByPtAngle(p1, angle, dist):
    """
    y = dist * math.sin(angle)
    x = dist * math.cos(angle)
-   return QgsPoint(p1.x() + x, p1.y() + y)
+   return QgsPointXY(p1.x() + x, p1.y() + y)
 
 
 #===============================================================================
@@ -2001,28 +2183,29 @@ def asPointOrPolyline(geom):
    result = []
    for g in geom.asGeometryCollection():
       wkbType = g.wkbType()
-      if wkbType == QGis.WKBPoint or wkbType == QGis.WKBLineString:
+      if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ or \
+         wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
          result.append(g)
-      elif wkbType == QGis.WKBMultiPoint:
+      elif wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
          pointList = g.asMultiPoint() # vettore di punti
          for point in pointList:
             _g = QgsGeometry.fromPoint(point)
             result.append(_g)            
-      elif wkbType == QGis.WKBMultiLineString:
+      elif wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
          lineList = g.asMultiPolyline() # vettore di linee
          for line in lineList:
-            _g = QgsGeometry.fromPolyline(line)
+            _g = QgsGeometry.fromPolylineXY(line)
             result.append(_g)
-      elif wkbType == QGis.WKBPolygon:
+      elif wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
          lineList = g.asPolygon() # vettore di linee    
          for line in lineList:
-            _g = QgsGeometry.fromPolyline(line)
+            _g = QgsGeometry.fromPolylineXY(line)
             result.append(_g)
-      elif wkbType == QGis.WKBMultiPolygon:
+      elif wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
          polygonList = g.asMultiPolygon() # vettore di poligoni
          for polygon in polygonList:
             for line in polygon:
-               _g = QgsGeometry.fromPolyline(line)
+               _g = QgsGeometry.fromPolylineXY(line)
                result.append(_g)
                
    return result
@@ -2077,6 +2260,16 @@ def doubleGreater(a, b, tolerance = TOLERANCE):
 
 
 #===============================================================================
+# doubleGreaterOrEquals
+#===============================================================================
+def doubleGreaterOrEquals(a, b, tolerance = TOLERANCE):
+   """
+   la funzione compara 2 float (ma permette una tolleranza)
+   """
+   return a > b or doubleNear(a, b, tolerance)
+
+
+#===============================================================================
 # doubleSmaller
 #===============================================================================
 def doubleSmaller(a, b, tolerance = TOLERANCE):
@@ -2085,7 +2278,17 @@ def doubleSmaller(a, b, tolerance = TOLERANCE):
    """
    return a < b and not doubleNear(a, b, tolerance)
 
+   
+#===============================================================================
+# doubleSmallerOrEquals
+#===============================================================================
+def doubleSmallerOrEquals(a, b, tolerance = TOLERANCE):
+   """
+   la funzione compara 2 float (ma permette una tolleranza)
+   """
+   return a < b or doubleNear(a, b, tolerance)
 
+   
 #===============================================================================
 # TanDirectionNear
 #===============================================================================
@@ -2096,11 +2299,11 @@ def TanDirectionNear(a, b, tolerance = TOLERANCE):
    if doubleNear(a, b):
       return True
    arc = QadArc()
-   arc.set(QgsPoint(0,0), 1, a, b)
+   arc.set(QgsPointXY(0,0), 1, a, b)
    if arc.totalAngle() <= tolerance:
       return True
    else:
-      arc.set(QgsPoint(0,0), 1, b, a)
+      arc.set(QgsPointXY(0,0), 1, b, a)
       return arc.totalAngle() <= tolerance
 
 
@@ -2129,7 +2332,7 @@ def sqrDistToSegment(point, x1, y1, x2, y2, epsilon):
    (<minima distanza al quadrato>
     <punto più vicino>)
    """
-   minDistPoint = QgsPoint()
+   minDistPoint = QgsPointXY()
    
    if x1 == x2 and y1 == y2:
       minDistPoint.setX(x1)
@@ -2169,7 +2372,7 @@ def sqrDistToArc(point, arc):
    (<minima distanza al quadrato>
     <punto più vicino>)
    """   
-   minDistPoint = QgsPoint()
+   minDistPoint = QgsPointXY()
    angle = getAngleBy2Pts(arc.center, point)
    if isAngleBetweenAngles(arc.startAngle, arc.endAngle, angle):
       distFromArc = getDistance(arc.center, point) - arc.radius
@@ -2196,21 +2399,21 @@ def closestSegmentWithContext(point, geom, epsilon = 1.e-15):
     <indice vertice successivo del segmento più vicino (nel caso la geom fosse linea o poligono)>
     <"a sinistra di" se il punto é alla sinista del segmento (< 0 -> sinistra, > 0 -> destra)
    """
-   minDistPoint = QgsPoint()
+   minDistPoint = QgsPointXY()
    closestSegmentIndex = 0
    wkbType = geom.wkbType()
    sqrDist = sys.float_info.max
 
-   if wkbType == QGis.WKBPoint:
+   if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
       minDistPoint = geom.asPoint()
       point.sqrDist(minDistPoint)
       return (point.sqrDist(minDistPoint), minDistPoint, None, None)
  
-   if wkbType == QGis.WKBMultiPoint:
+   if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       minDistPoint = getNearestPoints(point, geom.asMultiPoint())[0] # vettore di punti
       return (point.sqrDist(minDistPoint), minDistPoint, None, None)
 
-   if wkbType == QGis.WKBLineString:
+   if wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
       points = geom.asPolyline() # vettore di punti
       index = 0
       for pt in points:
@@ -2236,7 +2439,7 @@ def closestSegmentWithContext(point, geom, epsilon = 1.e-15):
       leftOf = leftOfLine(point, geom.vertexAt(closestSegmentIndex - 1), geom.vertexAt(closestSegmentIndex))
       return (sqrDist, minDistPoint, closestSegmentIndex, leftOf)
 
-   if wkbType == QGis.WKBMultiLineString:
+   if wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
       lines = geom.asMultiPolyline() # lista di linee
       pointindex = 0
       for line in lines:
@@ -2264,7 +2467,7 @@ def closestSegmentWithContext(point, geom, epsilon = 1.e-15):
       leftOf = leftOfLine(point, geom.vertexAt(closestSegmentIndex - 1), geom.vertexAt(closestSegmentIndex))         
       return (sqrDist, minDistPoint, closestSegmentIndex, leftOf)
 
-   if wkbType == QGis.WKBPolygon:
+   if wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
       lines = geom.asPolygon() # lista di linee    
       index = 0
       for line in lines:
@@ -2292,7 +2495,7 @@ def closestSegmentWithContext(point, geom, epsilon = 1.e-15):
       leftOf = leftOfLine(point, geom.vertexAt(closestSegmentIndex - 1), geom.vertexAt(closestSegmentIndex))
       return (sqrDist, minDistPoint, closestSegmentIndex, leftOf)
 
-   if wkbType == QGis.WKBMultiPolygon:
+   if wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
       polygons = geom.asMultiPolygon() # vettore di poligoni
       pointindex = 0
       for polygon in polygons:
@@ -2333,9 +2536,9 @@ def closestVertexPtWithContext(point, geom, epsilon = 1.e-15):
    la funzione ritorna il punto del vertice più vicino a point
    """
    wkbType = geom.wkbType()
-   if wkbType == QGis.WKBPoint:
+   if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
       return geom.asPoint()
-   if wkbType == QGis.WKBMultiPoint:
+   if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       return getNearestPoints(point, geom.asMultiPoint())[0] # vettore di punti
    
    # ritorna una tupla (<The squared cartesian distance>,
@@ -2347,7 +2550,7 @@ def closestVertexPtWithContext(point, geom, epsilon = 1.e-15):
       # ritorna la sotto-geometria al vertice <atVertex> e la sua posizione nella geometria (0-based)
       subGeom, atSubGeom1 = qad_utils.getSubGeomAtVertex(geom, dummy[2])
       l = QadLinearObjectList()
-      l.fromPolyline(subGeom.asPolyline())
+      l.fromPolylineXY(subGeom.asPolyline())
       vertexAt = l.closestVertexWithContext(point)
       return l.getPointAtVertex(vertexAt)
 
@@ -2388,7 +2591,7 @@ def getBoundingPtsOnOnInfinityLine(linePt1, linePt2, pts):
          boundingPt2 = pt2
       i = i + 1
 
-   return [QgsPoint(boundingPt1), QgsPoint(boundingPt2)]
+   return [QgsPointXY(boundingPt1), QgsPointXY(boundingPt2)]
 
 
 #===============================================================================
@@ -2396,7 +2599,7 @@ def getBoundingPtsOnOnInfinityLine(linePt1, linePt2, pts):
 #===============================================================================
 def rotatePoint(point, basePt, angle):
    """
-   la funzione ruota un punto QgsPoint secondo un punto base <basePt> e un angolo <angle> in radianti 
+   la funzione ruota un punto QgsPointXY secondo un punto base <basePt> e un angolo <angle> in radianti
    """
    return getPolarPointByPtAngle(basePt, getAngleBy2Pts(basePt, point) + angle, getDistance(basePt, point))
 
@@ -2413,45 +2616,45 @@ def rotateQgsGeometry(geom, basePt, angle):
 
    wkbType = geom.wkbType()
    
-   if wkbType == QGis.WKBPoint or wkbType == QGis.WKBPoint25D:
+   if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
       pt = geom.asPoint() # un punto
       newPt = rotatePoint(pt, basePt, angle)
       return QgsGeometry.fromPoint(newPt)
 
-   if wkbType == QGis.WKBMultiPoint:
+   if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       points = geom.asMultiPoint() # vettore di punti
       for pt in points:
          newPt = rotatePoint(pt, basePt, angle)
          pt.set(newPt.x(), newPt.y())
-      return QgsGeometry.fromMultiPoint(points)
+      return QgsGeometry.fromMultiPointXY(points)
    
-   if wkbType == QGis.WKBLineString:
+   if wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
       points = geom.asPolyline() # vettore di punti
       for pt in points:
          newPt = rotatePoint(pt, basePt, angle)
          pt.set(newPt.x(), newPt.y())
          
-      return QgsGeometry.fromPolyline(points)
+      return QgsGeometry.fromPolylineXY(points)
    
-   if wkbType == QGis.WKBMultiLineString:
+   if wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
       lines = geom.asMultiPolyline() # lista di linee
       for line in lines:        
          for pt in line: # lista di punti
             newPt = rotatePoint(pt, basePt, angle)
             pt.set(newPt.x(), newPt.y())
 
-      return QgsGeometry.fromMultiPolyline(lines)
+      return QgsGeometry.fromMultiPolylineXY(lines)
    
-   if wkbType == QGis.WKBPolygon:
+   if wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
       lines = geom.asPolygon() # lista di linee    
       for line in lines:
          for pt in line: # lista di punti
             newPt = rotatePoint(pt, basePt, angle)
             pt.set(newPt.x(), newPt.y())
             
-      return QgsGeometry.fromPolygon(lines)
+      return QgsGeometry.fromPolygonXY(lines)
 
-   if wkbType == QGis.WKBMultiPolygon:
+   if wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
       polygons = geom.asMultiPolygon() # vettore di poligoni
       for polygon in polygons:
          for line in polygon: # lista di linee
@@ -2459,7 +2662,7 @@ def rotateQgsGeometry(geom, basePt, angle):
                newPt = rotatePoint(pt, basePt, angle)
                pt.set(newPt.x(), newPt.y())
                
-      return QgsGeometry.fromMultiPolygon(polygons)
+      return QgsGeometry.fromMultiPolygonXY(polygons)
 
    return None
 
@@ -2469,7 +2672,7 @@ def rotateQgsGeometry(geom, basePt, angle):
 #===============================================================================
 def scalePoint(point, basePt, scale):
    """
-   la funzione scala un punto QgsPoint secondo un punto base <basePt> e un fattore di scala
+   la funzione scala un punto QgsPointXY secondo un punto base <basePt> e un fattore di scala
    """
    return getPolarPointByPtAngle(basePt, getAngleBy2Pts(basePt, point), getDistance(basePt, point) * scale)
 
@@ -2486,45 +2689,45 @@ def scaleQgsGeometry(geom, basePt, scale):
 
    wkbType = geom.wkbType()
    
-   if wkbType == QGis.WKBPoint or wkbType == QGis.WKBPoint25D:
+   if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
       pt = geom.asPoint() # un punto
       newPt = scalePoint(pt, basePt, scale)
       return QgsGeometry.fromPoint(newPt)
 
-   if wkbType == QGis.WKBMultiPoint:
+   if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       points = geom.asMultiPoint() # vettore di punti
       for pt in points:
          newPt = scalePoint(pt, basePt, scale)
          pt.set(newPt.x(), newPt.y())
-      return QgsGeometry.fromMultiPoint(points)
+      return QgsGeometry.fromMultiPointXY(points)
    
-   if wkbType == QGis.WKBLineString:
+   if wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
       points = geom.asPolyline() # vettore di punti
       for pt in points:
          newPt = scalePoint(pt, basePt, scale)
          pt.set(newPt.x(), newPt.y())
             
-      return ApproxCurvesOnGeom(QgsGeometry.fromPolyline(points))   
+      return ApproxCurvesOnGeom(QgsGeometry.fromPolylineXY(points))
    
-   if wkbType == QGis.WKBMultiLineString:
+   if wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
       lines = geom.asMultiPolyline() # lista di linee
       for line in lines:        
          for pt in line: # lista di punti
             newPt = scalePoint(pt, basePt, scale)
             pt.set(newPt.x(), newPt.y())
 
-      return ApproxCurvesOnGeom(QgsGeometry.fromMultiPolyline(lines))   
+      return ApproxCurvesOnGeom(QgsGeometry.fromMultiPolylineXY(lines))
 
-   if wkbType == QGis.WKBPolygon:
+   if wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
       lines = geom.asPolygon() # lista di linee    
       for line in lines:
          for pt in line: # lista di punti
             newPt = scalePoint(pt, basePt, scale)
             pt.set(newPt.x(), newPt.y())
             
-      return ApproxCurvesOnGeom(QgsGeometry.fromPolygon(lines))   
+      return ApproxCurvesOnGeom(QgsGeometry.fromPolygonXY(lines))
 
-   if wkbType == QGis.WKBMultiPolygon:
+   if wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
       polygons = geom.asMultiPolygon() # vettore di poligoni
       for polygon in polygons:
          for line in polygon: # lista di linee
@@ -2532,7 +2735,7 @@ def scaleQgsGeometry(geom, basePt, scale):
                newPt = scalePoint(pt, basePt, scale)
                pt.set(newPt.x(), newPt.y())
                
-      return ApproxCurvesOnGeom(QgsGeometry.fromMultiPolygon(polygons))
+      return ApproxCurvesOnGeom(QgsGeometry.fromMultiPolygonXY(polygons))
 
    return None
 
@@ -2542,9 +2745,9 @@ def scaleQgsGeometry(geom, basePt, scale):
 #===============================================================================
 def movePoint(point, offSetX, offSetY):
    """
-   la funzione sposta un punto QgsPoint secondo un offset X e uno Y
+   la funzione sposta un punto QgsPointXY secondo un offset X e uno Y
    """
-   return QgsPoint(point.x() + offSetX, point.y() + offSetY)
+   return QgsPointXY(point.x() + offSetX, point.y() + offSetY)
 
 
 #===============================================================================
@@ -2559,45 +2762,45 @@ def moveQgsGeometry(geom, offSetX, offSetY):
 
    wkbType = geom.wkbType()
    
-   if wkbType == QGis.WKBPoint or wkbType == QGis.WKBPoint25D:
+   if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
       pt = geom.asPoint() # un punto
       newPt = movePoint(pt, offSetX, offSetY)
       return QgsGeometry.fromPoint(newPt)
 
-   if wkbType == QGis.WKBMultiPoint:
+   if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       points = geom.asMultiPoint() # vettore di punti
       for pt in points:
          newPt = movePoint(pt, offSetX, offSetY)
          pt.set(newPt.x(), newPt.y())
-      return QgsGeometry.fromMultiPoint(points)
+      return QgsGeometry.fromMultiPointXY(points)
    
-   if wkbType == QGis.WKBLineString:
+   if wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
       points = geom.asPolyline() # vettore di punti
       for pt in points:
          newPt = movePoint(pt, offSetX, offSetY)
          pt.set(newPt.x(), newPt.y())
          
-      return QgsGeometry.fromPolyline(points)
+      return QgsGeometry.fromPolylineXY(points)
    
-   if wkbType == QGis.WKBMultiLineString:
+   if wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
       lines = geom.asMultiPolyline() # lista di linee
       for line in lines:        
          for pt in line: # lista di punti
             newPt = movePoint(pt, offSetX, offSetY)
             pt.set(newPt.x(), newPt.y())
 
-      return QgsGeometry.fromMultiPolyline(lines)
+      return QgsGeometry.fromMultiPolylineXY(lines)
    
-   if wkbType == QGis.WKBPolygon:
+   if wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
       lines = geom.asPolygon() # lista di linee    
       for line in lines:
          for pt in line: # lista di punti
             newPt = movePoint(pt, offSetX, offSetY)
             pt.set(newPt.x(), newPt.y())
             
-      return QgsGeometry.fromPolygon(lines)
+      return QgsGeometry.fromPolygonXY(lines)
 
-   if wkbType == QGis.WKBMultiPolygon:
+   if wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
       polygons = geom.asMultiPolygon() # vettore di poligoni
       for polygon in polygons:
          for line in polygon: # lista di linee
@@ -2605,7 +2808,7 @@ def moveQgsGeometry(geom, offSetX, offSetY):
                newPt = movePoint(pt, offSetX, offSetY)
                pt.set(newPt.x(), newPt.y())
                
-      return QgsGeometry.fromMultiPolygon(polygons)
+      return QgsGeometry.fromMultiPolygonXY(polygons)
 
    return None
 
@@ -2632,7 +2835,7 @@ def extendQgsGeometry(geom_crs, geom, pt, limitEntitySet, edgeMode, tolerance2Ap
 
    wkbType = geom.wkbType()
    
-   if wkbType != QGis.WKBLineString and wkbType != QGis.WKBMultiLineString:
+   if wkbType != QgsWkbTypes.LineString and wkbType != QgsWkbTypes.MultiLineString:
       return None
 
    # ritorna una tupla (<The squared cartesian distance>,
@@ -2646,7 +2849,7 @@ def extendQgsGeometry(geom_crs, geom, pt, limitEntitySet, edgeMode, tolerance2Ap
    subGeom, atSubGeom = getSubGeomAtVertex(geom, dummy[2])
    
    LinearObjectListToExtend = QadLinearObjectList()
-   LinearObjectListToExtend.fromPolyline(subGeom.asPolyline())
+   LinearObjectListToExtend.fromPolylineXY(subGeom.asPolyline())
    
    if LinearObjectListToExtend.isClosed(): # non si può fare con polilinea chiusa
       return None
@@ -2655,7 +2858,7 @@ def extendQgsGeometry(geom_crs, geom, pt, limitEntitySet, edgeMode, tolerance2Ap
    if subGeom.vertexAt(0) == pt:
       distFromStart = 0
    else:
-      distFromStart = QgsGeometry.fromPolyline(getLinePart(subGeom, \
+      distFromStart = QgsGeometry.fromPolylineXY(getLinePart(subGeom, \
                                                            subGeom.vertexAt(0), \
                                                            pt)).length()
    if distFromStart > (subGeom.length() / 2):
@@ -2676,7 +2879,7 @@ def extendQgsGeometry(geom_crs, geom, pt, limitEntitySet, edgeMode, tolerance2Ap
       limitLayer = limitLayerEntitySet.layer
       
       if limitLayer.crs() != geom_crs:
-         coordTransform = QgsCoordinateTransform(limitLayer.crs(), geom_crs)
+         coordTransform = QgsCoordinateTransform(limitLayer.crs(), geom_crs,QgsProject.instance())
       ExtendedLinearObject.set(LinearObjectToExtend)
             
       # per ciascuna entità del layer
@@ -2710,7 +2913,7 @@ def extendQgsGeometry(geom_crs, geom, pt, limitEntitySet, edgeMode, tolerance2Ap
    
    pts = LinearObjectListToExtend.asPolyline(tolerance2ApproxCurve)
    
-   return setSubGeom(geom, QgsGeometry.fromPolyline(pts), atSubGeom)
+   return setSubGeom(geom, QgsGeometry.fromPolylineXY(pts), atSubGeom)
 
 
 #===============================================================================
@@ -2735,7 +2938,7 @@ def getIntersectionPtExtendQgsGeometry(linearObject, limitGeom, edgeMode):
    for limitGeom in limitGeoms:         
       Found = False
       wkbType = limitGeom.wkbType()
-      if wkbType == QGis.WKBPoint or wkbType == QGis.WKBPoint25D:
+      if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
          pt = limitGeom.asPoint()
          if linearObject.isSegment():
             if isPtOnInfinityLine(linearObject.getStartPt(), linearObject.getEndPt(), pt):
@@ -2746,21 +2949,21 @@ def getIntersectionPtExtendQgsGeometry(linearObject, limitGeom, edgeMode):
             if circle.isPtOnCircle(pt):
                intPts.append(pt)                  
       else: # Linestring
-         limitLinearObjectParts.fromPolyline(limitGeom.asPolyline())
+         limitLinearObjectParts.fromPolylineXY(limitGeom.asPolyline())
          
          # primo tratto
          LimitLinearObject = limitLinearObjectParts.getLinearObjectAt(0)
          pts = linearObject.getIntersectionPtsOnExtensionWithLinearObject(LimitLinearObject)               
          if edgeMode == 0: # senza estendere
             # considero solo i punti sulla parte <LimitLinearObject>
-            for i in xrange(len(pts) - 1, -1, -1):
+            for i in range(len(pts) - 1, -1, -1):
                pt = pts[i]
                if LimitLinearObject.containsPt(pt) == False:
                   del pts[i]
          else:
             if LimitLinearObject.isSegment():
                # considero solo i punti sulla parte <LimitLinearObject> o oltre l'inizio
-               for i in xrange(len(pts) - 1, -1, -1):
+               for i in range(len(pts) - 1, -1, -1):
                   pt = pts[i]
                   if LimitLinearObject.containsPt(pt) == False:
                      if getDistance(LimitLinearObject.getStartPt(), pt) > \
@@ -2774,7 +2977,7 @@ def getIntersectionPtExtendQgsGeometry(linearObject, limitGeom, edgeMode):
             LimitLinearObject = limitLinearObjectParts.getLinearObjectAt(i)
             pts = linearObject.getIntersectionPtsOnExtensionWithLinearObject(LimitLinearObject)               
             # considero solo i punti sulla parte <LimitLinearObject>
-            for j in xrange(len(pts) - 1, -1, -1):
+            for j in range(len(pts) - 1, -1, -1):
                pt = pts[j]
                if LimitLinearObject.containsPt(pt) == False:
                   del pts[j]
@@ -2787,14 +2990,14 @@ def getIntersectionPtExtendQgsGeometry(linearObject, limitGeom, edgeMode):
          pts = linearObject.getIntersectionPtsOnExtensionWithLinearObject(LimitLinearObject)               
          if edgeMode == 0: # senza estendere
             # considero solo i punti sulla parte <LimitLinearObject>
-            for i in xrange(len(pts) - 1, -1, -1):
+            for i in range(len(pts) - 1, -1, -1):
                pt = pts[i]
                if LimitLinearObject.containsPt(pt) == False:
                   del pts[i]
          else:
             if LimitLinearObject.isSegment():
                # considero solo i punti sulla parte <LimitLinearObject> o oltre la fine
-               for i in xrange(len(pts) - 1, -1, -1):
+               for i in range(len(pts) - 1, -1, -1):
                   pt = pts[i]
                   if LimitLinearObject.containsPt(pt) == False:
                      if getDistance(LimitLinearObject.getStartPt(), pt) < \
@@ -2803,7 +3006,7 @@ def getIntersectionPtExtendQgsGeometry(linearObject, limitGeom, edgeMode):
          intPts.extend(pts)
 
    # cancello i punti di intersezione che non sono oltre la fine di linearObject
-   for i in xrange(len(intPts) - 1, -1, -1):
+   for i in range(len(intPts) - 1, -1, -1):
       if linearObject.containsPt(intPts[i]) == True:
          del intPts[i]
       else:
@@ -2849,8 +3052,8 @@ def trimQgsGeometry(geom_crs, geom, pt, limitEntitySet, edgeMode, tolerance2Appr
 
    wkbType = geom.wkbType()
    
-   if wkbType != QGis.WKBLineString and wkbType != QGis.WKBMultiLineString and \
-      wkbType != QGis.WKBPolygon and wkbType != QGis.WKBMultiPolygon:
+   if wkbType != QgsWkbTypes.LineString and wkbType != QgsWkbTypes.MultiLineString and \
+      wkbType != QgsWkbTypes.Polygon and wkbType != QgsWkbTypes.MultiPolygon:
       return None
 
    # ritorna una tupla (<The squared cartesian distance>,
@@ -2864,7 +3067,7 @@ def trimQgsGeometry(geom_crs, geom, pt, limitEntitySet, edgeMode, tolerance2Appr
    subGeom, atSubGeom = getSubGeomAtVertex(geom, dummy[2])
    
    LinearObjectListToCut = QadLinearObjectList()
-   LinearObjectListToCut.fromPolyline(subGeom.asPolyline())
+   LinearObjectListToCut.fromPolylineXY(subGeom.asPolyline())
       
    # divido la polilinea in 2
    dummy = LinearObjectListToCut.breakOnPt(pt)
@@ -2888,17 +3091,17 @@ def trimQgsGeometry(geom_crs, geom, pt, limitEntitySet, edgeMode, tolerance2Appr
             newPt, partNumberAtpartList = partList2ToTrim.getIntPtNearestToStartPt(geom_crs, limitEntitySet, edgeMode)
             if newPt is None:
                return None
-            for i in xrange(0, partNumberAtpartList, 1):
+            for i in range(0, partNumberAtpartList, 1):
                partList2ToTrim.remove(0)
             # modifico la parte iniziale della prima parte
             partList2ToTrim.getLinearObjectAt(0).setStartPt(newPt)
             partList2ToTrim.reverse()
       else:
-         for i in xrange(0, partNumberAtpartList1, 1):
+         for i in range(0, partNumberAtpartList1, 1):
             partList1ToTrim.remove(0)
          # modifico la parte iniziale della prima parte
          partList1ToTrim.getLinearObjectAt(0).setStartPt(newPt1)
-         geom1 = QgsGeometry.fromPolyline(partList1ToTrim.asPolyline(tolerance2ApproxCurve))
+         geom1 = QgsGeometry.fromPolylineXY(partList1ToTrim.asPolyline(tolerance2ApproxCurve))
 
       partList1ToTrim.reverse()
       
@@ -2913,7 +3116,7 @@ def trimQgsGeometry(geom_crs, geom, pt, limitEntitySet, edgeMode, tolerance2Appr
             newPt, partNumberAtpartList = partList1ToTrim.getIntPtNearestToStartPt(geom_crs, limitEntitySet, edgeMode)
             if newPt is None:
                return None
-            for i in xrange(0, partNumberAtpartList, 1):
+            for i in range(0, partNumberAtpartList, 1):
                partList1ToTrim.remove(0)
             # modifico la parte iniziale della prima parte
             partList1ToTrim.getLinearObjectAt(0).setStartPt(newPt)
@@ -2925,11 +3128,11 @@ def trimQgsGeometry(geom_crs, geom, pt, limitEntitySet, edgeMode, tolerance2Appr
          return None
    
    if newPt2 is not None:
-      for i in xrange(0, partNumberAtpartList2, 1):
+      for i in range(0, partNumberAtpartList2, 1):
          partList2ToTrim.remove(0)
       # modifico la parte iniziale della seconda parte
       partList2ToTrim.getLinearObjectAt(0).setStartPt(newPt2)
-      geom2 = QgsGeometry.fromPolyline(partList2ToTrim.asPolyline(tolerance2ApproxCurve))
+      geom2 = QgsGeometry.fromPolylineXY(partList2ToTrim.asPolyline(tolerance2ApproxCurve))
       if geom1 is None:
          return [geom2, None, atSubGeom]
    else:
@@ -2960,26 +3163,26 @@ def getIntersectionPtTrimQgsGeometry(linearObject, limitGeom, edgeMode):
    for limitGeom in limitGeoms:         
       Found = False
       wkbType = limitGeom.wkbType()
-      if wkbType == QGis.WKBPoint or wkbType == QGis.WKBPoint25D:
+      if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
          pt = limitGeom.asPoint()
          if linearObject.containsPt(pt):
             intPts.append(pt)
       else: # Linestring
-         limitLinearObjectParts.fromPolyline(limitGeom.asPolyline())
+         limitLinearObjectParts.fromPolylineXY(limitGeom.asPolyline())
          
          # primo tratto
          LimitLinearObject = limitLinearObjectParts.getLinearObjectAt(0)
          pts = linearObject.getIntersectionPtsOnExtensionWithLinearObject(LimitLinearObject)               
          if edgeMode == 0: # senza estendere
             # considero solo i punti sulla parte <LimitLinearObject>
-            for i in xrange(len(pts) - 1, -1, -1):
+            for i in range(len(pts) - 1, -1, -1):
                pt = pts[i]
                if LimitLinearObject.containsPt(pt) == False:
                   del pts[i]
          else:
             if LimitLinearObject.isSegment():
                # considero solo i punti sulla parte <LimitLinearObject> o oltre l'inizio
-               for i in xrange(len(pts) - 1, -1, -1):
+               for i in range(len(pts) - 1, -1, -1):
                   pt = pts[i]
                   if LimitLinearObject.containsPt(pt) == False:
                      if getDistance(LimitLinearObject.getStartPt(), pt) > \
@@ -2987,7 +3190,7 @@ def getIntersectionPtTrimQgsGeometry(linearObject, limitGeom, edgeMode):
                         del pts[i]
                         
          # considero solo i punti sulla parte <linearObject>
-         for i in xrange(len(pts) - 1, -1, -1):
+         for i in range(len(pts) - 1, -1, -1):
             pt = pts[i]
             if linearObject.containsPt(pt) == False:
                del pts[i]
@@ -3000,7 +3203,7 @@ def getIntersectionPtTrimQgsGeometry(linearObject, limitGeom, edgeMode):
             LimitLinearObject = limitLinearObjectParts.getLinearObjectAt(i)
             pts = linearObject.getIntersectionPtsOnExtensionWithLinearObject(LimitLinearObject)               
             # considero solo i punti sulla parte <LimitLinearObject> e <linearObject>
-            for j in xrange(len(pts) - 1, -1, -1):
+            for j in range(len(pts) - 1, -1, -1):
                pt = pts[j]
                if LimitLinearObject.containsPt(pt) == False or linearObject.containsPt(pt) == False:
                   del pts[j]
@@ -3013,14 +3216,14 @@ def getIntersectionPtTrimQgsGeometry(linearObject, limitGeom, edgeMode):
          pts = linearObject.getIntersectionPtsOnExtensionWithLinearObject(LimitLinearObject)               
          if edgeMode == 0: # senza estendere
             # considero solo i punti sulla parte <LimitLinearObject>
-            for i in xrange(len(pts) - 1, -1, -1):
+            for i in range(len(pts) - 1, -1, -1):
                pt = pts[i]
                if LimitLinearObject.containsPt(pt) == False:
                   del pts[i]
          else:
             if LimitLinearObject.isSegment():
                # considero solo i punti sulla parte <LimitLinearObject> o oltre la fine
-               for i in xrange(len(pts) - 1, -1, -1):
+               for i in range(len(pts) - 1, -1, -1):
                   pt = pts[i]
                   if LimitLinearObject.containsPt(pt) == False:
                      if getDistance(LimitLinearObject.getStartPt(), pt) < \
@@ -3028,7 +3231,7 @@ def getIntersectionPtTrimQgsGeometry(linearObject, limitGeom, edgeMode):
                         del pts[i]
                         
          # considero solo i punti sulla parte <linearObject>
-         for i in xrange(len(pts) - 1, -1, -1):
+         for i in range(len(pts) - 1, -1, -1):
             pt = pts[i]
             if linearObject.containsPt(pt) == False:
                del pts[i]
@@ -3067,8 +3270,8 @@ def breakQgsGeometry(geom, firstPt, secondPt, tolerance2ApproxCurve):
 
    wkbType = geom.wkbType()
    
-   if wkbType != QGis.WKBLineString and wkbType != QGis.WKBMultiLineString and \
-      wkbType != QGis.WKBPolygon and wkbType != QGis.WKBMultiPolygon:
+   if wkbType != QgsWkbTypes.LineString and wkbType != QgsWkbTypes.MultiLineString and \
+      wkbType != QgsWkbTypes.Polygon and wkbType != QgsWkbTypes.MultiPolygon:
       return None
 
    # ritorna una tupla (<The squared cartesian distance>,
@@ -3098,7 +3301,7 @@ def breakQgsGeometry(geom, firstPt, secondPt, tolerance2ApproxCurve):
          i = i + 1
    
    LinearObjectListToCut = QadLinearObjectList()
-   LinearObjectListToCut.fromPolyline(subGeom.asPolyline())
+   LinearObjectListToCut.fromPolylineXY(subGeom.asPolyline())
 
    geom1 = None
    geom2 = None
@@ -3112,9 +3315,9 @@ def breakQgsGeometry(geom, firstPt, secondPt, tolerance2ApproxCurve):
          return None
       else:
          if partList1ToTrim is not None:
-            geom1 = QgsGeometry.fromPolyline(partList1ToTrim.asPolyline(tolerance2ApproxCurve))
+            geom1 = QgsGeometry.fromPolylineXY(partList1ToTrim.asPolyline(tolerance2ApproxCurve))
          if partList2ToTrim is not None:
-            geom2 = QgsGeometry.fromPolyline(partList2ToTrim.asPolyline(tolerance2ApproxCurve))
+            geom2 = QgsGeometry.fromPolylineXY(partList2ToTrim.asPolyline(tolerance2ApproxCurve))
          
          return [geom1, geom2, atSubGeom]
    else: # c'é anche il secondo punto di divisione
@@ -3149,14 +3352,14 @@ def breakQgsGeometry(geom, firstPt, secondPt, tolerance2ApproxCurve):
                arc = QadArc()
                linearObject = partList2ToTrim.getLinearObjectAt(0)
                arc.fromStartSecondEndPts(linearObject.getStartPt(), linearObject.getEndPt(), partList2ToTrim.getEndPt())                         
-               geom1 = QgsGeometry.fromPolyline(arc.asPolyline(tolerance2ApproxCurve))            
+               geom1 = QgsGeometry.fromPolylineXY(arc.asPolyline(tolerance2ApproxCurve))
             else:
-               geom1 = QgsGeometry.fromPolyline(partList2ToTrim.asPolyline(tolerance2ApproxCurve))            
+               geom1 = QgsGeometry.fromPolylineXY(partList2ToTrim.asPolyline(tolerance2ApproxCurve))
       else: # se é aperta
          if partList1ToTrim is not None:
-            geom1 = QgsGeometry.fromPolyline(partList1ToTrim.asPolyline(tolerance2ApproxCurve))      
+            geom1 = QgsGeometry.fromPolylineXY(partList1ToTrim.asPolyline(tolerance2ApproxCurve))
          if partList2ToTrim is not None:
-            geom2 = QgsGeometry.fromPolyline(partList2ToTrim.asPolyline(tolerance2ApproxCurve))
+            geom2 = QgsGeometry.fromPolylineXY(partList2ToTrim.asPolyline(tolerance2ApproxCurve))
       if geom1 is None and geom2 is None:
          return None
 
@@ -3168,7 +3371,7 @@ def breakQgsGeometry(geom, firstPt, secondPt, tolerance2ApproxCurve):
 #===============================================================================
 def mirrorPoint(point, mirrorPt, mirrorAngle):
    """
-   la funzione sposta un punto QgsPoint secondo una linea speculare passante per un 
+   la funzione sposta un punto QgsPointXY secondo una linea speculare passante per un
    un punto <mirrorPt> ed avente angolo <mirrorAngle>
    """
    pointAngle = getAngleBy2Pts(mirrorPt, point)
@@ -3189,45 +3392,45 @@ def mirrorQgsGeometry(geom, pt1, pt2):
    mirrorAngle = getAngleBy2Pts(pt1, pt2)
    wkbType = geom.wkbType()   
    
-   if wkbType == QGis.WKBPoint or wkbType == QGis.WKBPoint25D:
+   if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
       pt = geom.asPoint() # un punto
       newPt = mirrorPoint(pt, pt1, mirrorAngle)
       return QgsGeometry.fromPoint(newPt)
 
-   if wkbType == QGis.WKBMultiPoint:
+   if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       points = geom.asMultiPoint() # vettore di punti
       for pt in points:
          newPt = mirrorPoint(pt, pt1, mirrorAngle)
          pt.set(newPt.x(), newPt.y())
-      return QgsGeometry.fromMultiPoint(points)
+      return QgsGeometry.fromMultiPointXY(points)
    
-   if wkbType == QGis.WKBLineString:
+   if wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
       points = geom.asPolyline() # vettore di punti
       for pt in points:
          newPt = mirrorPoint(pt, pt1, mirrorAngle)
          pt.set(newPt.x(), newPt.y())
          
-      return QgsGeometry.fromPolyline(points)
+      return QgsGeometry.fromPolylineXY(points)
    
-   if wkbType == QGis.WKBMultiLineString:
+   if wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
       lines = geom.asMultiPolyline() # lista di linee
       for line in lines:        
          for pt in line: # lista di punti
             newPt = mirrorPoint(pt, pt1, mirrorAngle)
             pt.set(newPt.x(), newPt.y())
 
-      return QgsGeometry.fromMultiPolyline(lines)
+      return QgsGeometry.fromMultiPolylineXY(lines)
    
-   if wkbType == QGis.WKBPolygon:
+   if wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
       lines = geom.asPolygon() # lista di linee    
       for line in lines:
          for pt in line: # lista di punti
             newPt = mirrorPoint(pt, pt1, mirrorAngle)
             pt.set(newPt.x(), newPt.y())
             
-      return QgsGeometry.fromPolygon(lines)
+      return QgsGeometry.fromPolygonXY(lines)
 
-   if wkbType == QGis.WKBMultiPolygon:
+   if wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
       polygons = geom.asMultiPolygon() # vettore di poligoni
       for polygon in polygons:
          for line in polygon: # lista di linee
@@ -3235,7 +3438,7 @@ def mirrorQgsGeometry(geom, pt1, pt2):
                newPt = mirrorPoint(pt, pt1, mirrorAngle)
                pt.set(newPt.x(), newPt.y())
                
-      return QgsGeometry.fromMultiPolygon(polygons)
+      return QgsGeometry.fromMultiPolygonXY(polygons)
 
    return None
 
@@ -3252,18 +3455,18 @@ def closeQgsGeometry(geom, toClose, tolerance2ApproxCurve):
 
    wkbType = geom.wkbType()   
    
-   if wkbType == QGis.WKBLineString:
+   if wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
       linearObjectList = QadLinearObjectList()
-      linearObjectList.fromPolyline(geom.asPolyline())
+      linearObjectList.fromPolylineXY(geom.asPolyline())
       linearObjectList.setClose(toClose)
-      return QgsGeometry.fromPolyline(linearObjectList.asPolyline(tolerance2ApproxCurve))
+      return QgsGeometry.fromPolylineXY(linearObjectList.asPolyline(tolerance2ApproxCurve))
    
-   if wkbType == QGis.WKBMultiLineString:
+   if wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
       newGeom = QgsGeometry(geom)
       lines = geom.asMultiPolyline() # lista di linee
       atSubGeom = 0
       for line in lines:        
-         subGeom = closeQgsGeometry(QgsGeometry.fromPolyline(line), toClose, tolerance2ApproxCurve)
+         subGeom = closeQgsGeometry(QgsGeometry.fromPolylineXY(line), toClose, tolerance2ApproxCurve)
          newGeom = setSubGeom(newGeom, subGeom, [atSubGeom])    
          atSubGeom = atSubGeom + 1
       return newGeom      
@@ -3283,38 +3486,38 @@ def reverseQgsGeometry(geom, tolerance2ApproxCurve):
 
    wkbType = geom.wkbType()   
    
-   if wkbType == QGis.WKBLineString:
+   if wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
       linearObjectList = QadLinearObjectList()
-      linearObjectList.fromPolyline(geom.asPolyline())
+      linearObjectList.fromPolylineXY(geom.asPolyline())
       linearObjectList.reverse()
-      return QgsGeometry.fromPolyline(linearObjectList.asPolyline(tolerance2ApproxCurve))
+      return QgsGeometry.fromPolylineXY(linearObjectList.asPolyline(tolerance2ApproxCurve))
    
-   if wkbType == QGis.WKBMultiLineString:
+   if wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
       newGeom = QgsGeometry(geom)
       lines = geom.asMultiPolyline() # lista di linee
       atSubGeom = 0
       for line in lines:        
-         subGeom = reverseQgsGeometry(QgsGeometry.fromPolyline(line), tolerance2ApproxCurve)
+         subGeom = reverseQgsGeometry(QgsGeometry.fromPolylineXY(line), tolerance2ApproxCurve)
          newGeom = setSubGeom(newGeom, subGeom, [atSubGeom])    
          atSubGeom = atSubGeom + 1
       return newGeom      
 
-   if wkbType == QGis.WKBPolygon:
+   if wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
       newGeom = QgsGeometry(geom)
       lines = geom.asPolygon() # lista di linee
       atSubGeom = 0
       for line in lines:        
-         subGeom = reverseQgsGeometry(QgsGeometry.fromPolyline(line), tolerance2ApproxCurve)
+         subGeom = reverseQgsGeometry(QgsGeometry.fromPolylineXY(line), tolerance2ApproxCurve)
          newGeom = setSubGeom(newGeom, subGeom, [atSubGeom])    
          atSubGeom = atSubGeom + 1
       return newGeom
       
-   if wkbType == QGis.WKBMultiPolygon:
+   if wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
       newGeom = QgsGeometry(geom)
       polygons = geom.asMultiPolygon() # vettore di poligoni
       atSubGeom = 0
       for polygon in polygons:
-         subGeom = reverseQgsGeometry(QgsGeometry.fromPolygon(polygon), tolerance2ApproxCurve)
+         subGeom = reverseQgsGeometry(QgsGeometry.fromPolygonXY(polygon), tolerance2ApproxCurve)
          newGeom = setSubGeom(newGeom, subGeom, [atSubGeom])    
          atSubGeom = atSubGeom + 1
       return newGeom
@@ -3337,39 +3540,39 @@ def curveQgsGeometry(geom, toCurve, tolerance2ApproxCurve):
 
    wkbType = geom.wkbType()   
    
-   if wkbType == QGis.WKBLineString:
+   if wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
       linearObjectList = QadLinearObjectList()
-      linearObjectList.fromPolyline(geom.asPolyline())
+      linearObjectList.fromPolylineXY(geom.asPolyline())
       linearObjectList.curve(toCurve)
 
-      return QgsGeometry.fromPolyline(linearObjectList.asPolyline(tolerance2ApproxCurve))
+      return QgsGeometry.fromPolylineXY(linearObjectList.asPolyline(tolerance2ApproxCurve))
    
-   if wkbType == QGis.WKBMultiLineString:
+   if wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
       newGeom = QgsGeometry(geom)
       lines = geom.asMultiPolyline() # lista di linee
       atSubGeom = 0
       for line in lines:        
-         subGeom = curveQgsGeometry(QgsGeometry.fromPolyline(line), toCurve, tolerance2ApproxCurve)
+         subGeom = curveQgsGeometry(QgsGeometry.fromPolylineXY(line), toCurve, tolerance2ApproxCurve)
          newGeom = setSubGeom(newGeom, subGeom, [atSubGeom])    
          atSubGeom = atSubGeom + 1
       return newGeom      
 
-   if wkbType == QGis.WKBPolygon:
+   if wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
       newGeom = QgsGeometry(geom)
       lines = geom.asPolygon() # lista di linee
       atSubGeom = 0
       for line in lines:        
-         subGeom = curveQgsGeometry(QgsGeometry.fromPolyline(line), toCurve, tolerance2ApproxCurve)
+         subGeom = curveQgsGeometry(QgsGeometry.fromPolylineXY(line), toCurve, tolerance2ApproxCurve)
          newGeom = setSubGeom(newGeom, subGeom, [atSubGeom])    
          atSubGeom = atSubGeom + 1
       return newGeom
       
-   if wkbType == QGis.WKBMultiPolygon:
+   if wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
       newGeom = QgsGeometry(geom)
       polygons = geom.asMultiPolygon() # vettore di poligoni
       atSubGeom = 0
       for polygon in polygons:
-         subGeom = curveQgsGeometry(QgsGeometry.fromPolygon(polygon), toCurve, tolerance2ApproxCurve)
+         subGeom = curveQgsGeometry(QgsGeometry.fromPolygonXY(polygon), toCurve, tolerance2ApproxCurve)
          newGeom = setSubGeom(newGeom, subGeom, [atSubGeom])    
          atSubGeom = atSubGeom + 1
       return newGeom
@@ -3399,14 +3602,14 @@ def getRectByCorners(firstCorner, secondCorner, rot, gapType, \
                                 getDistance(firstCorner, pt2))
    
    if gapType == 0: # gli spigoli del rettangolo hanno angoli retti
-      return [QgsPoint(firstCorner), pt2, QgsPoint(secondCorner), pt4, QgsPoint(firstCorner)]
+      return [QgsPointXY(firstCorner), pt2, QgsPointXY(secondCorner), pt4, QgsPointXY(firstCorner)]
    else:
       length = getDistance(firstCorner, pt2)
       width = getDistance(pt2, secondCorner)
                   
       if gapType == 1: # raccorda gli spigoli del rettangolo con un raggio di curvatura gapValue1
          if (gapValue1 * 2) > length or (gapValue1 * 2) > width: # il rettangolo é troppo piccolo
-            return [QgsPoint(firstCorner), pt2, QgsPoint(secondCorner), pt4, QgsPoint(firstCorner)]
+            return [QgsPointXY(firstCorner), pt2, QgsPointXY(secondCorner), pt4, QgsPointXY(firstCorner)]
          
          if tolerance2ApproxCurve is None:
             tolerance = QadVariables.get(QadMsg.translate("Environment variables", "TOLERANCE2APPROXCURVE"))
@@ -3467,7 +3670,7 @@ def getRectByCorners(firstCorner, secondCorner, rot, gapType, \
          return LinearObjectList.asPolyline(tolerance)
       elif gapType == 2: # smussa gli spigoli del rettangolo con 2 distanze di cimatura gapValue1, gapValue2
          if (gapValue1 + gapValue2) > length or (gapValue1 + gapValue2) > width: # il rettangolo é troppo piccolo
-            return [QgsPoint(firstCorner), pt2, QgsPoint(secondCorner), pt4, QgsPoint(firstCorner)]
+            return [QgsPointXY(firstCorner), pt2, QgsPointXY(secondCorner), pt4, QgsPointXY(firstCorner)]
 
          p1 = getPolarPointByPtAngle(firstCorner, angle, gapValue2)
          p2 = getPolarPointByPtAngle(pt2, angle + math.pi, gapValue1)
@@ -3606,7 +3809,7 @@ def getPolygonByNsidesCenterRadius(sideNumber, centerPt, radius, Inscribed, ptSt
          angle = getAngleBy2Pts(centerPt, ptStart)      
       
    result.append(myPtStart)
-   for i in xrange(1, sideNumber, 1):
+   for i in range(1, sideNumber, 1):
       angle = angle + angleIncrement
       result.append(getPolarPointByPtAngle(centerPt, angle, myRadius))  
    result.append(myPtStart)
@@ -3631,7 +3834,7 @@ def getPolygonByNsidesEdgePts(sideNumber, firstEdgePt, secondEdgePt):
    result.append(firstEdgePt)
    result.append(secondEdgePt)
    lastPoint = secondEdgePt
-   for i in xrange(1, sideNumber - 1, 1):
+   for i in range(1, sideNumber - 1, 1):
       angle = angle + angleIncrement
       lastPoint = getPolarPointByPtAngle(lastPoint, angle, sideLength)
       result.append(lastPoint)  
@@ -3671,25 +3874,25 @@ def getSubGeomAtVertex(geom, atVertex):
    # la posizione é espressa con una lista (<index ogg. princ> [<index ogg. sec.>])
    wkbType = geom.wkbType()
    
-   if wkbType == QGis.WKBPoint or wkbType == QGis.WKBPoint25D:
+   if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
       if atVertex == 0:
          return QgsGeometry(geom), [0]
 
-   elif wkbType == QGis.WKBMultiPoint:
+   elif wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       pts = geom.asMultiPoint() # lista di punti
       if atVertex > len(pts) - 1:
          return None, None
       else:
          return QgsGeometry.fromPoint(pts[atVertex]), [atVertex]
 
-   elif wkbType == QGis.WKBLineString:
+   elif wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
       pts = geom.asPolyline() # lista di punti
       if atVertex > len(pts) - 1:
          return None, None
       else:
          return QgsGeometry(geom), [0]
          
-   elif wkbType == QGis.WKBMultiLineString:
+   elif wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
       # cerco in quale linea é il vertice <atVertex>
       i = 0
       iLine = 0
@@ -3697,12 +3900,12 @@ def getSubGeomAtVertex(geom, atVertex):
       for line in lines:
          lineLen = len(line)
          if atVertex >= i and atVertex < i + lineLen:
-            return QgsGeometry.fromPolyline(line), [iLine]
+            return QgsGeometry.fromPolylineXY(line), [iLine]
          i = i + lineLen 
          iLine = iLine + 1
       return None, None
    
-   elif wkbType == QGis.WKBPolygon:
+   elif wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
       lines = geom.asPolygon() # lista di linee
       if len(lines) > 0:
          i = 0
@@ -3711,14 +3914,14 @@ def getSubGeomAtVertex(geom, atVertex):
             lineLen = len(line)
             if atVertex >= i and atVertex < i + lineLen: # il numero di vertice ricade in questa linea
                if iRing == -1: # si tratta della parte più esterna
-                  return QgsGeometry.fromPolyline(line), [0] # parte <0>, ring <0>
+                  return QgsGeometry.fromPolylineXY(line), [0] # parte <0>, ring <0>
                else:
-                  return QgsGeometry.fromPolyline(line), [0, iRing] # parte <0>, ring <iRing>
+                  return QgsGeometry.fromPolylineXY(line), [0, iRing] # parte <0>, ring <iRing>
             i = i + lineLen 
             iRing = iRing + 1
       return None, None
 
-   elif wkbType == QGis.WKBMultiPolygon:
+   elif wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
       i = 0
       iPolygon = 0
       polygons = geom.asMultiPolygon() # lista di poligoni
@@ -3728,9 +3931,9 @@ def getSubGeomAtVertex(geom, atVertex):
             lineLen = len(line)
             if atVertex >= i and atVertex < i + lineLen: # il numero di vertice ricade in questa linea
                if iRing == -1: # si tratta della parte più esterna
-                  return QgsGeometry.fromPolyline(line), [iPolygon] # parte <iPolygon>
+                  return QgsGeometry.fromPolylineXY(line), [iPolygon] # parte <iPolygon>
                else:
-                  return QgsGeometry.fromPolyline(line), [iPolygon, iRing] # parte <iPolygon>, ring <iRing>
+                  return QgsGeometry.fromPolylineXY(line), [iPolygon, iRing] # parte <iPolygon>, ring <iRing>
             
             i = i + lineLen 
             iRing = iRing + 1
@@ -3748,41 +3951,42 @@ def getSubGeomAt(geom, atSubGeom):
    wkbType = geom.wkbType()
    
    ndx = 0
-   if wkbType == QGis.WKBPoint or wkbType == QGis.WKBPoint25D or wkbType == QGis.WKBLineString:
+   if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ or \
+      wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
       if atSubGeom[0] == 0:
          return QgsGeometry(geom)
             
-   if wkbType == QGis.WKBMultiPoint:
+   if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       nPoint = atSubGeom[0]
       return QgsGeometry(geom.vertexAt(nPoint))
       
-   if wkbType == QGis.WKBMultiLineString:
+   if wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
       nLine = atSubGeom[0]
       lines = geom.asMultiPolyline() # lista di linee
       if nLine < len(lines):
-         return QgsGeometry.fromPolyline(lines[nLine])
+         return QgsGeometry.fromPolylineXY(lines[nLine])
    
-   if wkbType == QGis.WKBPolygon:
+   if wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
       if atSubGeom[0] == 0:
          lines = geom.asPolygon() # lista di linee
          if len(atSubGeom) == 1: # si tratta della parte più esterna
-            return QgsGeometry.fromPolyline(lines[0])
+            return QgsGeometry.fromPolylineXY(lines[0])
          else:
             iRing = atSubGeom[1]
             if iRing + 1 < len(lines):
-               return QgsGeometry.fromPolyline(lines[iRing + 1])
+               return QgsGeometry.fromPolylineXY(lines[iRing + 1])
    
-   if wkbType == QGis.WKBMultiPolygon:
+   if wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
       nPolygon = atSubGeom[0]
       polygons = geom.asMultiPolygon() # lista di poligoni
       if nPolygon < len(polygons):
          lines = polygons[nPolygon]
          if len(atSubGeom) == 1: # si tratta della parte più esterna
-            return QgsGeometry.fromPolyline(lines[0])
+            return QgsGeometry.fromPolylineXY(lines[0])
          else:
             iRing = atSubGeom[1]
             if iRing + 1 < len(lines):
-               return QgsGeometry.fromPolyline(lines[iRing + 1])
+               return QgsGeometry.fromPolylineXY(lines[iRing + 1])
          
    return None
 
@@ -3797,30 +4001,32 @@ def setSubGeom(geom, SubGeom, atSubGeom):
    subWkbType = SubGeom.wkbType()
    
    ndx = 0
-   if wkbType == QGis.WKBPoint or wkbType == QGis.WKBPoint25D or wkbType == QGis.WKBLineString:
+   if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ or \
+      wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
       if atSubGeom[0] == 0 and \
-         (subWkbType == QGis.WKBPoint or subWkbType == QGis.WKBPoint25D or subWkbType == QGis.WKBLineString):
+         (subWkbType == QgsWkbTypes.Point or subWkbType == QgsWkbTypes.PointZ or \
+          subWkbType == QgsWkbTypes.LineString or subWkbType == QgsWkbTypes.LineStringZ):
          return QgsGeometry(SubGeom)
             
-   if wkbType == QGis.WKBMultiPoint:
+   if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       nPoint = atSubGeom[0]
-      if subWkbType == QGis.WKBPoint or subWkbType == QGis.WKBPoint25D:
+      if subWkbType == QgsWkbTypes.Point or subWkbType == QgsWkbTypes.PointZ:
          result = QgsGeometry(geom)
          pt = SubGeom.asPoint()
          if result.moveVertex(pt.x, pt.y(), nPoint) == True:
             return result
       
-   if wkbType == QGis.WKBMultiLineString:
-      if subWkbType == QGis.WKBLineString:
+   if wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
+      if subWkbType == QgsWkbTypes.LineString or subWkbType == QgsWkbTypes.LineStringZ:
          nLine = atSubGeom[0]
          lines = geom.asMultiPolyline() # lista di linee
          if nLine < len(lines) and nLine >= -len(lines):
             del lines[nLine]
             lines.insert(nLine, SubGeom.asPolyline())
-            return QgsGeometry.fromMultiPolyline(lines)
+            return QgsGeometry.fromMultiPolylineXY(lines)
 
-   if wkbType == QGis.WKBPolygon:
-      if subWkbType == QGis.WKBLineString:
+   if wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
+      if subWkbType == QgsWkbTypes.LineString or subWkbType == QgsWkbTypes.LineStringZ:
          if atSubGeom[0] == 0:
             lines = geom.asPolygon() # lista di linee
             if len(atSubGeom) == 1: # si tratta della parte più esterna
@@ -3828,7 +4034,7 @@ def setSubGeom(geom, SubGeom, atSubGeom):
                lines.insert(0, SubGeom.asPolyline())
                # per problemi di approssimazione con LL il primo punto e l'ultimo non sono uguali quindi lo forzo
                lines[0][-1].set(lines[0][0].x(), lines[0][0].y())
-               return QgsGeometry.fromPolygon(lines)
+               return QgsGeometry.fromPolygonXY(lines)
             else:
                iRing = atSubGeom[1]
                if iRing + 1 < len(lines):
@@ -3836,10 +4042,10 @@ def setSubGeom(geom, SubGeom, atSubGeom):
                   lines.insert(iRing + 1, SubGeom.asPolyline())
                   # per problemi di approssimazione con LL il primo punto e l'ultimo non sono uguali quindi lo forzo
                   lines[iRing + 1][-1].set(lines[iRing + 1][0].x(), lines[iRing + 1][0].y())
-                  return QgsGeometry.fromPolygon(lines)
+                  return QgsGeometry.fromPolygonXY(lines)
 
-   if wkbType == QGis.WKBMultiPolygon:
-      if subWkbType == QGis.WKBLineString:
+   if wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
+      if subWkbType == QgsWkbTypes.LineString or subWkbType == QgsWkbTypes.LineStringZ:
          nPolygon = atSubGeom[0]
          polygons = geom.asMultiPolygon() # lista di poligoni
          if nPolygon < len(polygons):
@@ -3849,7 +4055,7 @@ def setSubGeom(geom, SubGeom, atSubGeom):
                lines.insert(0, SubGeom.asPolyline())
                # per problemi di approssimazione con LL il primo punto e l'ultimo non sono uguali quindi lo forzo
                lines[0][-1].set(lines[0][0].x(), lines[0][0].y())
-               return QgsGeometry.fromMultiPolygon(polygons)
+               return QgsGeometry.fromMultiPolygonXY(polygons)
             else:
                iRing = atSubGeom[1]
                if iRing + 1 < len(lines):
@@ -3857,14 +4063,14 @@ def setSubGeom(geom, SubGeom, atSubGeom):
                   lines.insert(iRing + 1, SubGeom.asPolyline())
                   # per problemi di approssimazione con LL il primo punto e l'ultimo non sono uguali quindi lo forzo
                   lines[iRing + 1][-1].set(lines[iRing + 1][0].x(), lines[iRing + 1][0].y())
-                  return QgsGeometry.fromMultiPolygon(polygons)
-      elif subWkbType == QGis.WKBPolygon:
+                  return QgsGeometry.fromMultiPolygonXY(polygons)
+      elif subWkbType == QgsWkbTypes.Polygon or subWkbType == QgsWkbTypes.PolygonZ:
          nPolygon = atSubGeom[0]
          polygons = geom.asMultiPolygon() # lista di poligoni
          if nPolygon < len(polygons):
             del polygons[nPolygon]
             polygons.insert(nPolygon, SubGeom.asPolygon())
-            return QgsGeometry.fromMultiPolygon(polygons)
+            return QgsGeometry.fromMultiPolygonXY(polygons)
          
    return None
 
@@ -3878,24 +4084,25 @@ def delSubGeom(geom, atSubGeom):
    wkbType = geom.wkbType()
    
    ndx = 0
-   if wkbType == QGis.WKBPoint or wkbType == QGis.WKBPoint25D or wkbType == QGis.WKBLineString:
+   if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ or \
+      wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
       return None
             
-   if wkbType == QGis.WKBMultiPoint:
+   if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       nPoint = atSubGeom[0]
       result = QgsGeometry(geom)
       pt = SubGeom.asPoint()
       if result.deleteVertex(nPoint) == True:
          return result
       
-   if wkbType == QGis.WKBMultiLineString:
+   if wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
       nLine = atSubGeom[0]
       lines = geom.asMultiPolyline() # lista di linee
       if nLine < len(lines) and nLine >= -len(lines):
          del lines[nLine]
-         return QgsGeometry.fromMultiPolyline(lines)
+         return QgsGeometry.fromMultiPolylineXY(lines)
    
-   if wkbType == QGis.WKBPolygon:
+   if wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
       if atSubGeom[0] == 0:
          lines = geom.asPolygon() # lista di linee
          if len(atSubGeom) == 1: # si tratta della parte più esterna
@@ -3905,21 +4112,21 @@ def delSubGeom(geom, atSubGeom):
             iRing = atSubGeom[1]
             if iRing + 1 < len(lines):
                del lines[iRing + 1]
-               return QgsGeometry.fromPolygon(lines)
+               return QgsGeometry.fromPolygonXY(lines)
 
-   if wkbType == QGis.WKBMultiPolygon:
+   if wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
       nPolygon = atSubGeom[0]
       polygons = geom.asMultiPolygon() # lista di poligoni
       if nPolygon < len(polygons):
          lines = polygons[nPolygon]
          if len(atSubGeom) == 1: # si tratta della parte più esterna
             del polygons[nPolygon]
-            return QgsGeometry.fromMultiPolygon(polygons)
+            return QgsGeometry.fromMultiPolygonXY(polygons)
          else:
             iRing = atSubGeom[1]
             if iRing + 1 < len(lines):
                del lines[iRing + 1]
-               return QgsGeometry.fromMultiPolygon(polygons)
+               return QgsGeometry.fromMultiPolygonXY(polygons)
 
    return None
 
@@ -5135,9 +5342,9 @@ def getIntersectionPointInfo_offset(part, nextPart):
    1 = TIP (True Intersection Point) se il punto di intersezione ottenuto estendendo 
    le 2 parti si trova su <part>
    
-   2  = FIP  (False Intersection Point) se il punto di intersezione ottenuto estendendo
-    
+   2  = FIP (False Intersection Point) se il punto di intersezione ottenuto estendendo
    le 2 parti non si trova su <part>
+   
    3 = PFIP (Positive FIP) se il punto di intersezione é nella stessa direzione di part
 
    4 = NFIP (Negative FIP) se il punto di intersezione é nella direzione opposta di part
@@ -5632,7 +5839,8 @@ def virtualPartClipping(untrimmedOffsetPartList, virtualPartPositionList):
             prevPart.setEndPt(ptIntList[0]) # modifico la fine
             result.remove(virtualPartPosition)
             del virtualPartPositionList[i]
-            
+            for j in range(i, len(virtualPartPositionList)):
+               virtualPartPositionList[j] = virtualPartPositionList[j] - 1 # scalo tutto di uno 
       i = i - 1
           
    prevPart_1 = QadLinearObject()
@@ -5644,7 +5852,7 @@ def virtualPartClipping(untrimmedOffsetPartList, virtualPartPositionList):
    # ma che non formino con il resto della linea altre isole.
    # quando considero un lato adiacente alla parte virtuale da un lato devo considerare le intersezioni 
    # partendo dal lato successivo quello adicente nella parte opposta di quello virtuale 
-   for i in xrange(len(virtualPartPositionList) - 1, -1, -1):      
+   for i in range(len(virtualPartPositionList) - 1, -1, -1):
       virtualPartPosition = virtualPartPositionList[i]
       # finché non trovo l'intersezione
       nPrevPartsToRemove = -1
@@ -5709,14 +5917,14 @@ def virtualPartClipping(untrimmedOffsetPartList, virtualPartPositionList):
          islandPartList.append(islandPart)
          
          pos = virtualPartPosition        
-         for j in xrange(nPrevPartsToRemove, 0, - 1):
+         for j in range(nPrevPartsToRemove, 0, - 1):
             pos = result.getPrevPos(pos) # parte precedente        
             islandPartList.append(QadLinearObject(result.getLinearObjectAt(pos)))
 
          islandPartList.append(virtualPart)
 
          pos = virtualPartPosition        
-         for j in xrange(1, nNextPartsToRemove + 1, 1):
+         for j in range(1, nNextPartsToRemove + 1, 1):
             pos = result.getNextPos(pos) # parte successiva        
             islandPartList.append(QadLinearObject(result.getLinearObjectAt(pos)))
 
@@ -5732,7 +5940,7 @@ def virtualPartClipping(untrimmedOffsetPartList, virtualPartPositionList):
          else:
             nIntersections = 0
 
-         for j in xrange(nextPos + 1, result.qty(), 1):            
+         for j in range(nextPos + 1, result.qty(), 1):
             dummy = islandPartList.getIntersectionPtsWithLinearObject(result.getLinearObjectAt(j))
             intPtList = dummy[0]                               
             nIntersections = nIntersections + len(intPtList)
@@ -5745,7 +5953,7 @@ def virtualPartClipping(untrimmedOffsetPartList, virtualPartPositionList):
             else:
                nIntersections = 0
 
-            for j in xrange(prevPos - 1, -1, -1):            
+            for j in range(prevPos - 1, -1, -1):
                dummy = islandPartList.getIntersectionPtsWithLinearObject(result.getLinearObjectAt(j))
                intPtList = dummy[0]                    
                nIntersections = nIntersections + len(intPtList)
@@ -5759,14 +5967,14 @@ def virtualPartClipping(untrimmedOffsetPartList, virtualPartPositionList):
                   result.remove(nextPos)
 
                # cancello le parti inutili
-               for j in xrange(0, nNextPartsToRemove, 1):
+               for j in range(0, nNextPartsToRemove, 1):
                   result.remove(virtualPartPosition + 1)
                    
                # cancello la parte virtuale
                result.remove(virtualPartPosition)
        
                # cancello le parti inutili
-               for j in xrange(0, nPrevPartsToRemove, 1):
+               for j in range(0, nPrevPartsToRemove, 1):
                   result.remove(virtualPartPosition - nPrevPartsToRemove)
 
                if prevPart_2.isInitialized():
@@ -5963,8 +6171,14 @@ def generalClosedPointPairClipping(partList, dualClippedPartList, offSetDist):
    <partList>: lista delle parti originali della polilinea 
    <dualClippedPartList>: lista delle parti risultato del dual clipping
    <offSetDist> distanza di offset
+   
+   Per ogni parte della polilinea originale cerco qual'è il punto più vicino per ogni
+   parte di dualClippedPartList. Se questo punto è più vicino di offSetDist allora faccio
+   un cerchio con centro il punto della polilinea originale e cancello il
+   pezzo di segmento di dualClippedPartList iterno al cerchio. Questo per eliminare i pezzi di
+   dualClippedPartList più vicino di offSetDist a partList.
        
-   La funzione ritorna una lista di parti risultato del dual clipping 
+   La funzione ritorna una lista di parti risultato del general closed point pair clipping
    """
    # inizio di General Closed Point Pair clipping
    GCPPCList = QadLinearObjectList(dualClippedPartList) # duplico la lista di parti      
@@ -5975,36 +6189,28 @@ def generalClosedPointPairClipping(partList, dualClippedPartList, offSetDist):
       # per ogni parte di GCPPCList
       i = 0
       while i < GCPPCList.qty():
-         # ripeto finché viene fatto lo split        
-         splitted = True
-         while splitted:
-            splitted = False
-            GCPPCPart = GCPPCList.getLinearObjectAt(i)
-            # verifico quale é il punto di part più vicino a GCPPCPart
-            # (<punto di distanza minima sulla parte 1><punto di distanza minima sulla parte 2><distanza minima>)
-            MinDistancePts = part.getMinDistancePtsWithLinearObject(GCPPCPart)
-            # se la distanza é inferiore a offSetDist (e non così vicina da essere considerata uguale)
-            if MinDistancePts[2] < offSetDist and not doubleNear(MinDistancePts[2], offSetDist):
-               # creo un cerchio nel punto di part più vicino a GCPPCPart
-               circle.set(MinDistancePts[0], offSetDist)
-               # ottengo le parti di GCPPCPart esterne al cerchio 
-               splittedParts = GCPPCPart.getPartsExternalToCircle(circle)
-               # se la splittedParts è composta da una sola parte che è uguale a GCPPCPart
-               # ad es. se GCPPCPart è tangente al cerchio allora non faccio niente
-               if splittedParts.qty() == 0 or \
-                  splittedParts.qty() == 1 and splittedParts.getLinearObjectAt(0) == GCPPCPart:
-                  i = i + 1
-               else:
-                  # le sostituisco a GCPPCPart
-                  for splittedPart in splittedParts.defList:
-                     GCPPCList.insert(i, splittedPart)
-                     i = i + 1
-                  GCPPCList.remove(i)
-                  if splittedParts.qty() > 0:
-                     splitted = True
-                     i = i - splittedParts.qty() # torno alla prima parte risultato dello split
-            else:
+         GCPPCPart = GCPPCList.getLinearObjectAt(i)
+         # verifico quale é il punto di part più vicino a GCPPCPart
+         # (<punto di distanza minima sulla parte 1><punto di distanza minima sulla parte 2><distanza minima>)
+         MinDistancePts = part.getMinDistancePtsWithLinearObject(GCPPCPart)
+         # se la distanza é inferiore a offSetDist (e non così vicina da essere considerata uguale)
+         if MinDistancePts[2] < offSetDist and not doubleNear(MinDistancePts[2], offSetDist):
+            # creo un cerchio nel punto di part più vicino a GCPPCPart
+            circle.set(MinDistancePts[0], offSetDist)
+            # ottengo le parti di GCPPCPart esterne al cerchio 
+            splittedParts = GCPPCPart.getPartsExternalToCircle(circle)
+            # se la splittedParts è composta da una sola parte che è uguale a GCPPCPart
+            # ad es. se GCPPCPart è tangente al cerchio allora non faccio niente
+            if splittedParts.qty() == 1 and splittedParts.getLinearObjectAt(0) == GCPPCPart:
                i = i + 1
+            else:
+               # le sostituisco a GCPPCPart
+               GCPPCList.remove(i)
+               for splittedPart in splittedParts.defList:
+                  GCPPCList.insert(i, splittedPart)
+                  i = i + 1
+         else:
+            i = i + 1
                        
    return GCPPCList
 
@@ -6068,7 +6274,7 @@ def offSetPolyline(points, epsg, offSetDist, offSetSide, gapType, tolerance2Appr
 
    # verifico se é un cerchio
    circle = QadCircle()
-   if circle.fromPolyline(points):
+   if circle.fromPolylineXY(points):
       # siccome i punti del cerchio sono disegnati in senso antiorario
       # se offSetSide = "right" significa verso l'esterno del cerchio
       # se offSetSide = "left" significa verso l'interno del cerchio
@@ -6086,14 +6292,14 @@ def offSetPolyline(points, epsg, offSetDist, offSetSide, gapType, tolerance2Appr
    
    # creo una lista dei segmenti e archi che formano la polilinea
    partList = QadLinearObjectList()
-   partList.fromPolyline(points)
+   partList.fromPolylineXY(points)
    # ottengo la polilinea di offset non tagliata
    untrimmedOffsetPartList = getUntrimmedOffSetPartList(partList, offSetDist, offSetSide, gapType, tolerance)
    # inverto il senso dei punti x ottenere la polilinea di offset non tagliata invertita
    reversedPoints = list(points) # duplico la lista
    reversedPoints.reverse()
    reversedPartList = QadLinearObjectList()
-   reversedPartList.fromPolyline(reversedPoints)
+   reversedPartList.fromPolylineXY(reversedPoints)
 
    untrimmedReversedOffsetPartList = getUntrimmedOffSetPartList(reversedPartList, offSetDist, offSetSide, gapType, tolerance)
    # taglio la polilinea dove necessario
@@ -6113,7 +6319,7 @@ def offSetPolyline(points, epsg, offSetDist, offSetSide, gapType, tolerance2Appr
 # getAdjustedRubberBandVertex
 #===============================================================================
 def getAdjustedRubberBandVertex(vertexBefore, vertex):
-   adjustedVertex = QgsPoint(vertex)
+   adjustedVertex = QgsPointXY(vertex)
          
    # per un baco non ancora capito in QGIS: se la linea ha solo 2 vertici e 
    # hanno la stessa x o y (linea orizzontale o verticale) 
@@ -6165,18 +6371,18 @@ def ApproxCurvesOnGeom(geom, atLeastNSegmentForArc = None, atLeastNSegmentForCir
    beforeVertex = 1
    
    # dall'ultimo arco al primo
-   for i in xrange(len(arcList.arcList) - 1, -1, -1): 
+   for i in range(len(arcList.arcList) - 1, -1, -1):
       arc = arcList.arcList[i]
       startVertex = arcList.startEndVerticesList[i][0]
       endVertex = arcList.startEndVerticesList[i][1]
       points = arc.asPolyline(tolerance)
       # inserisco i nuovi vertici saltando il primo e l'ultimo
       if arc.getStartPt() == g.vertexAt(startVertex):
-         for i in xrange(len(points) - 2, 0, -1): 
+         for i in range(len(points) - 2, 0, -1):
             if g.insertVertex(points[i].x(), points[i].y(), endVertex) == False:
                return None
       else:
-         for i in xrange(1, len(points), 1): 
+         for i in range(1, len(points), 1):
             if g.insertVertex(points[i].x(), points[i].y(), endVertex) == False:
                return None
       # cancello i vecchi vertici
@@ -6185,10 +6391,12 @@ def ApproxCurvesOnGeom(geom, atLeastNSegmentForArc = None, atLeastNSegmentForCir
             return None
 
    # dall'ultimo cerchio al primo
-   for i in xrange(len(circleList.circleList) - 1, -1, -1): 
+   for i in range(len(circleList.circleList) - 1, -1, -1):
       circle = circleList.circleList[i]
+      points = circle.asPolyline(tolerance)
+      subGeom = QgsGeometry().fromPolylineXY(points)
       ndxGeom = circleList.ndxGeomList[i] # (<index ogg. princ> [<index ogg. sec.>])
-      g = setSubGeom(g, ndxGeom[0], 0 if len(ndxGeom) == 1 else ndxGeom[1])
+      g = setSubGeom(g, subGeom, ndxGeom)
 
    return g
 
@@ -6219,7 +6427,7 @@ def whatGeomIs(pt, geom):
       
    # verifico se pt si riferisce ad un cerchio
    if circleList.fromGeom(geom) > 0:
-      subG, ndxGeom = qad_utils.getSubGeomAtVertex(g, afterVertex)
+      subG, ndxGeom = qad_utils.getSubGeomAtVertex(geom, afterVertex)
       circle = circleList.circleAt(ndxGeom)
       if circle is not None:
          return circle
@@ -6304,10 +6512,12 @@ def solveApollonius(c1, c2, c3, s1, s2, s3):
    xs = M+N*rs
    ys = P+Q*rs
    
-   center = QgsPoint(xs, ys)
+   center = QgsPointXY(xs, ys)
    circle = QadCircle()    
-   circle.set(center, rs)
-   return circle
+   if circle.set(center, rs) == False:
+      return None
+   else:
+      return circle
 
 
 #===============================================================================
@@ -6488,7 +6698,7 @@ def lineFrom2TanPts(geom1, pt1, geom2, pt2):
    
    if obj1Type == "ARC" or obj2Type == "ARC":
       # cancello le linee di tangenza che non abbiano un punto di tangenza nell'arco
-      for i in xrange(len(tangents) - 1, -1, -1):         
+      for i in range(len(tangents) - 1, -1, -1):
          toDelete1 = False         
          toDelete2 = False         
          if obj1Type == "ARC":
@@ -6583,7 +6793,7 @@ def lineFromTanPerPts(tanGeom1, tanPt1, perGeom2, perPt2):
 
    if obj1Type == "ARC" or obj2Type == "ARC":
       # cancello le linee che non abbiano un punto nell'arco
-      for i in xrange(len(lines) - 1, -1, -1):         
+      for i in range(len(lines) - 1, -1, -1):
          toDelete1 = False         
          toDelete2 = False         
          if obj1Type == "ARC":
@@ -6602,7 +6812,7 @@ def lineFromTanPerPts(tanGeom1, tanPt1, perGeom2, perPt2):
 
    if obj2Type == "LINE":
       # cancello le linee che non abbiano un punto nel segmento
-      for i in xrange(len(lines) - 1, -1, -1):         
+      for i in range(len(lines) - 1, -1, -1):
          line = lines[i]
          # primo punto tangente e secondo punto perpendicolare 
          if isPtOnSegment(obj2[0], obj2[1], line[1]) == False:
@@ -6699,7 +6909,7 @@ def lineFrom2PerPts(geom1, pt1, geom2, pt2):
 
    if obj1Type == "ARC" or obj2Type == "ARC":
       # cancello le linee che non abbiano un punto nell'arco
-      for i in xrange(len(lines) - 1, -1, -1):         
+      for i in range(len(lines) - 1, -1, -1):
          toDelete1 = False         
          toDelete2 = False         
          if obj1Type == "ARC":
@@ -6718,7 +6928,7 @@ def lineFrom2PerPts(geom1, pt1, geom2, pt2):
 
    if obj1Type == "LINE" or obj2Type == "LINE":
       # cancello le linee che non abbiano un punto nell'arco
-      for i in xrange(len(lines) - 1, -1, -1):         
+      for i in range(len(lines) - 1, -1, -1):
          toDelete1 = False         
          toDelete2 = False         
          if obj1Type == "LINE":
@@ -6821,7 +7031,7 @@ class QadLinearObject():
       """
       if self.isInitialized() == False:
          return False
-      return True if type(self.defList[0]) == QgsPoint else False
+      return True if type(self.defList[0]) == QgsPointXY else False
 
 
    #============================================================================
@@ -6833,7 +7043,7 @@ class QadLinearObject():
       """
       if self.isInitialized() == False:
          return False
-      return False if type(self.defList[0]) == QgsPoint else True
+      return False if type(self.defList[0]) == QgsPointXY else True
 
 
    #============================================================================
@@ -6901,7 +7111,7 @@ class QadLinearObject():
       """
       if self.isInitialized():
          del self.defList[:] # svuoto la lista
-      self.defList = [QgsPoint(p1), QgsPoint(p2)]
+      self.defList = [QgsPointXY(p1), QgsPointXY(p2)]
 
    
    #============================================================================
@@ -6915,13 +7125,13 @@ class QadLinearObject():
          del self.defList[:] # svuoto la lista
          
       if type(linearObject) == list or type(linearObject) == tuple: # é una lista
-         if type(linearObject[0]) == QgsPoint: # é un segmento
-            self.defList = [QgsPoint(linearObject[0]), QgsPoint(linearObject[1])]
+         if type(linearObject[0]) == QgsPointXY: # é un segmento
+            self.defList = [QgsPointXY(linearObject[0]), QgsPointXY(linearObject[1])]
          else: # é un arco
             self.defList = [QadArc(linearObject[0]), linearObject[1]]
       else: # é un oggetto QadLinearObject
          if linearObject.isSegment():
-            self.defList = [QgsPoint(linearObject.defList[0]), QgsPoint(linearObject.defList[1])]
+            self.defList = [QgsPointXY(linearObject.defList[0]), QgsPointXY(linearObject.defList[1])]
          else:
             self.defList = [QadArc(linearObject.defList[0]), linearObject.defList[1]]
       
@@ -6985,7 +7195,7 @@ class QadLinearObject():
       if self.isInitialized() == False:
          return None
       if self.isSegment(): # segmento
-         return QgsPoint(self.defList[0])
+         return QgsPointXY(self.defList[0])
       else: # arco
          if self.isInverseArc():
             return self.defList[0].getEndPt()
@@ -7491,8 +7701,8 @@ class QadLinearObject():
       if self.isInitialized() == False:
          return self      
       if self.isSegment(): # segmento
-         ptStart = QgsPoint(self.getStartPt())
-         ptEnd = QgsPoint(self.getEndPt())
+         ptStart = QgsPointXY(self.getStartPt())
+         ptEnd = QgsPointXY(self.getEndPt())
          self.setStartEndPts(ptEnd, ptStart)
       else: # arco
          self.setInverseArc(not self.isInverseArc())
@@ -7578,7 +7788,7 @@ class QadLinearObject():
       """
       la funzione trasforma le coordinate dei punti che compone l'oggetto lineare.
       """
-      return transform(QgsCoordinateTransform(sourceCRS, destCRS))
+      return transform(QgsCoordinateTransform(sourceCRS, destCRS,QgsProject.instance()))
 
    
    #============================================================================
@@ -7959,7 +8169,7 @@ class QadLinearObjectList():
    #============================================================================
    # fromPolyline
    #============================================================================
-   def fromPolyline(self, points):
+   def fromPolylineXY(self, points):
       """
       la funzione inizializza una lista di segmenti e archi (QadLinearObject) 
       che compone la polilinea.
@@ -8100,9 +8310,11 @@ class QadLinearObjectList():
       """
       if self.isClosed(): # verifico se polilinea chiusa
          ptList = self.asPolyline(tolerance2ApproxCurve)
-         g =  QgsGeometry.fromPolygon([ptList])
-         if g is not None: 
-            return g.centroid().asPoint()
+         g =  QgsGeometry.fromPolygonXY([ptList])
+         if g is not None:
+            centroid = g.centroid()
+            if centroid is not None:
+               return g.centroid().asPoint()
 
       return None
 
@@ -8304,7 +8516,7 @@ class QadLinearObjectList():
       """
       points = self.asPolyline() # vettore di punti
       circle = QadCircle()
-      return circle if circle.fromPolyline(points) else None
+      return circle if circle.fromPolylineXY(points) else None
 
 
    #============================================================================
@@ -8440,11 +8652,11 @@ class QadLinearObjectList():
       if polylineMode == False:
          for linearObject in self.defList:
            f = QgsFeature()
-           f.setGeometry(QgsGeometry.fromPolyline(linearObject.asPolyline()))
+           f.setGeometry(QgsGeometry.fromPolylineXY(linearObject.asPolyline()))
            fList.append(f)
       else:
          f = QgsFeature()
-         f.setGeometry(QgsGeometry.fromPolyline(self.asPolyline()))
+         f.setGeometry(QgsGeometry.fromPolylineXY(self.asPolyline()))
          fList.append(f)
       
       return fList
@@ -8748,7 +8960,7 @@ class QadLinearObjectList():
       # fetchAttributes, fetchGeometry, rectangle, useIntersect             
       for feature in vectorLayer.getFeatures(getFeatureRequest([], True, None, False)):                       
          linearObjectList = QadLinearObjectList()
-         linearObjectList.fromPolyline(feature.geometry().asPolyline())
+         linearObjectList.fromPolylineXY(feature.geometry().asPolyline())
          result.append(linearObjectList)
     
       return result  
@@ -8773,7 +8985,7 @@ class QadLinearObjectList():
       """
       la funzione trasforma le coordinate dei punti che compone l'oggetto lineare.
       """
-      return self.transform(QgsCoordinateTransform(sourceCRS, destCRS))
+      return self.transform(QgsCoordinateTransform(sourceCRS, destCRS,QgsProject.instance()))
          
          
    #============================================================================
@@ -8807,7 +9019,7 @@ class QadLinearObjectList():
        <indice della parte più vicina>       
        <"a sinistra di" se il punto é alla sinista della parte (< 0 -> sinistra, > 0 -> destra)
       """
-      minDistPoint = QgsPoint()
+      minDistPoint = QgsPointXY()
       closestPartIndex = 0
       sqrDist = sys.float_info.max
       leftOf = None
@@ -8876,7 +9088,7 @@ class QadLinearObjectList():
          return [partList1, partList2]
       else:
          partList1 = QadLinearObjectList()
-         for i in xrange(0, partAt, 1):
+         for i in range(0, partAt, 1):
             partList1.append(QadLinearObject(self.getLinearObjectAt(i)))
             
          if cuttedParts[0] is not None:
@@ -8892,7 +9104,7 @@ class QadLinearObjectList():
          if cuttedParts[1] is not None:
             partList2.append(cuttedParts[1])
          
-         for i in xrange(partAt + 1, self.qty(), 1):
+         for i in range(partAt + 1, self.qty(), 1):
             partList2.append(QadLinearObject(self.getLinearObjectAt(i)))
             
       return [partList1, partList2]
@@ -8918,7 +9130,7 @@ class QadLinearObjectList():
       gTransformed = QgsGeometry()
       
       # scorro i segmenti
-      for i in xrange(0, self.qty(), 1):
+      for i in range(0, self.qty(), 1):
          minDist = sys.float_info.max
          LinearObject = self.getLinearObjectAt(i)                                       
       
@@ -8927,7 +9139,7 @@ class QadLinearObjectList():
             layer = layerEntitySet.layer
             
             if layer.crs() != crs:
-               coordTransform = QgsCoordinateTransform(layer.crs(), crs)          
+               coordTransform = QgsCoordinateTransform(layer.crs(), crs,QgsProject.instance())
             trimmedLinearObject.set(LinearObject)
                   
             # per ciascuna entità del layer
@@ -8997,7 +9209,7 @@ def joinFeatureInVectorLayer(featureIdToJoin, vectorLayer, tolerance2ApproxCurve
    
    g = QgsGeometry(featureToJoin.geometry())
    linearObjectList = qad_utils.QadLinearObjectList()
-   linearObjectList.fromPolyline(g.asPolyline())
+   linearObjectList.fromPolylineXY(g.asPolyline())
    
    linearObjectListToJoinTo = qad_utils.QadLinearObjectList()
    
@@ -9019,7 +9231,7 @@ def joinFeatureInVectorLayer(featureIdToJoin, vectorLayer, tolerance2ApproxCurve
       # fetchAttributes, fetchGeometry, rectangle, useIntersect             
       for feature in vectorLayer.getFeatures(getFeatureRequest([], True, selectRect, True)):                       
          if feature.id() != featureIdToJoin: # salto la feature da unire
-            linearObjectListToJoinTo.fromPolyline(feature.geometry().asPolyline())
+            linearObjectListToJoinTo.fromPolylineXY(feature.geometry().asPolyline())
             
             if linearObjectList.join(linearObjectListToJoinTo, toleranceDist, mode) == True:
                found = True
@@ -9030,7 +9242,7 @@ def joinFeatureInVectorLayer(featureIdToJoin, vectorLayer, tolerance2ApproxCurve
                
                ptToJoin = linearObjectList.getStartPt()
                pts = linearObjectList.asPolyline(tolerance2ApproxCurve)
-               featureToJoin.setGeometry(QgsGeometry.fromPolyline(pts))
+               featureToJoin.setGeometry(QgsGeometry.fromPolylineXY(pts))
                if vectorLayer.updateFeature(featureToJoin) == False:
                   return []
                break
@@ -9046,7 +9258,7 @@ def joinFeatureInVectorLayer(featureIdToJoin, vectorLayer, tolerance2ApproxCurve
       # fetchAttributes, fetchGeometry, rectangle, useIntersect             
       for feature in vectorLayer.getFeatures(getFeatureRequest([], True, selectRect, True)):                       
          if feature.id() != featureIdToJoin: # salto la feature da unire
-            linearObjectListToJoinTo.fromPolyline(feature.geometry().asPolyline())
+            linearObjectListToJoinTo.fromPolylineXY(feature.geometry().asPolyline())
 
             if linearObjectList.join(linearObjectListToJoinTo, toleranceDist, mode) == True:
                found = True
@@ -9057,7 +9269,7 @@ def joinFeatureInVectorLayer(featureIdToJoin, vectorLayer, tolerance2ApproxCurve
                
                ptToJoin = linearObjectList.getEndPt()
                pts = linearObjectList.asPolyline(tolerance2ApproxCurve)
-               featureToJoin.setGeometry(QgsGeometry.fromPolyline(pts))
+               featureToJoin.setGeometry(QgsGeometry.fromPolylineXY(pts))
                if vectorLayer.updateFeature(featureToJoin) == False:
                   return []
                break
@@ -9109,7 +9321,7 @@ def joinEndPtsLinearParts(part1, part2, mode):
       else: # estendi
          IntPtList = part1.getIntersectionPtsOnExtensionWithLinearObject(part2)
          # considero solo i punti oltre l'inizio delle parti
-         for i in xrange(len(IntPtList) - 1, -1, -1):
+         for i in range(len(IntPtList) - 1, -1, -1):
             if part1.getDistanceFromStart(IntPtList[i]) < 0 or \
                part2.getDistanceFromStart(IntPtList[i]) < 0:
                del IntPtList[i]               
@@ -9376,11 +9588,11 @@ def getFilletLinearObjectList(poly1, partAt1, pointAt1, poly2, partAt2, pointAt2
 #============================================================================
 # QadRawConfigParser class suppporting unicode
 #============================================================================
-class QadRawConfigParser(ConfigParser.RawConfigParser):
+class QadRawConfigParser(RawConfigParser):
 
-   def __init__(self, defaults=None, dict_type=ConfigParser._default_dict,
+   def __init__(self, defaults=None, dict_type=_default_dict,
                  allow_no_value=False):
-      ConfigParser.RawConfigParser.__init__(self, defaults, dict_type, allow_no_value)
+      RawConfigParser.__init__(self, defaults, dict_type, allow_no_value)
       
    def get(self, section, option, default = None):
       try:
@@ -9390,19 +9602,19 @@ class QadRawConfigParser(ConfigParser.RawConfigParser):
 
    def getint(self, section, option, default = None):
       try:
-         return ConfigParser.RawConfigParser.getint(self, section, option)
+         return RawConfigParser.getint(self, section, option)
       except:
          return default
 
    def getfloat(self, section, option, default = None):
       try:
-         return ConfigParser.RawConfigParser.getfloat(self, section, option)
+         return RawConfigParser.getfloat(self, section, option)
       except:
          return default
 
    def getboolean(self, section, option, default = None):
       try:
-         return ConfigParser.RawConfigParser.getboolean(self, section, option)
+         return RawConfigParser.getboolean(self, section, option)
       except:
          return default
 
@@ -9441,4 +9653,4 @@ class Timer(object):
       self.secs = self.end - self.start
       self.msecs = self.secs * 1000  # millisecs
       if self.verbose:
-         print 'elapsed time: %f ms' % self.msecs
+         print('elapsed time: %f ms' % self.msecs)

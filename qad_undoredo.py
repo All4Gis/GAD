@@ -1,31 +1,22 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- funzioni per undo e redo
- 
-                              -------------------
-        begin                : 2014-04-24
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 
@@ -64,7 +55,7 @@ class QadUndoRecord():
    def layerAt(self, layerId):
       # ritorna la posizione nella lista 0-based), -1 se non trovato
       if self.layerList is not None and self.undoType == QadUndoRecordTypeEnum.COMMAND:
-         for j in xrange(0, len(self.layerList), 1):
+         for j in range(0, len(self.layerList), 1):
             if self.layerList[j].id() == layerId:
                return j
       return -1
@@ -153,7 +144,7 @@ class QadUndoStack():
 
    def clearByLayer(self, layerId):
       # elimino il layer <layerId> dalla lista dei record di undo
-      for i in xrange(len(self.UndoRecordList) - 1, -1, -1):
+      for i in range(len(self.UndoRecordList) - 1, -1, -1):
          UndoRecord = self.UndoRecordList[i]
          if UndoRecord.undoType == QadUndoRecordTypeEnum.COMMAND:
             UndoRecord.clearByLayer(layerId)      
@@ -176,7 +167,7 @@ class QadUndoStack():
       # dalla posizione di fine gruppo <endgroupPos> cerca la posizione di inizio gruppo
       # -1 se non trovato
       openFlag = 0
-      for i in xrange(endGroupPos, -1, -1):
+      for i in range(endGroupPos, -1, -1):
          UndoRecord = self.UndoRecordList[i]
          if UndoRecord.undoType == QadUndoRecordTypeEnum.BEGIN:
             openFlag = openFlag + 1
@@ -191,7 +182,7 @@ class QadUndoStack():
       # dalla posizione di inizio gruppo <endgroupPos> cerca la posizione di inizio gruppo
       # -1 se non trovato
       closeFlag = 0
-      for i in xrange(beginGroupPos, len(self.UndoRecordList), 1):
+      for i in range(beginGroupPos, len(self.UndoRecordList), 1):
          UndoRecord = self.UndoRecordList[i]
          if UndoRecord.undoType == QadUndoRecordTypeEnum.BEGIN:
             closeFlag = closeFlag - 1
@@ -252,7 +243,7 @@ class QadUndoStack():
       return False 
          
    def undoEditCommand(self, canvas = None, nTimes = 1):
-      for i in xrange(0, nTimes, 1):
+      for i in range(0, nTimes, 1):
          # cerco il primo record in cui ha senso fare UNDO
          if self.moveOnFirstUndoRecord() == False:
             break
@@ -287,7 +278,7 @@ class QadUndoStack():
       return False     
       
    def redoEditCommand(self, canvas = None, nTimes = 1):
-      for i in xrange(0, nTimes, 1):         
+      for i in range(0, nTimes, 1):
          # cerco il primo record in cui ha senso fare REDO
          if self.moveOnFirstRedoRecord() == False:
             break
@@ -341,7 +332,7 @@ class QadUndoStack():
    def undoUntilBookmark(self, canvas):
       if self.index == -1:
          return
-      for i in xrange(self.index, -1, -1):
+      for i in range(self.index, -1, -1):
          UndoRecord = self.UndoRecordList[i]
          if UndoRecord.undoType == QadUndoRecordTypeEnum.BOOKMARK:
             break
@@ -353,7 +344,7 @@ class QadUndoStack():
 
 
    def redoUntilBookmark(self, canvas):
-      for i in xrange(self.index + 1, len(self.UndoRecordList), 1):
+      for i in range(self.index + 1, len(self.UndoRecordList), 1):
          UndoRecord = self.UndoRecordList[i]
          if UndoRecord.undoType == QadUndoRecordTypeEnum.BOOKMARK:
             break
@@ -366,7 +357,7 @@ class QadUndoStack():
    def getPrevBookmarkPos(self, pos):
       # dalla posizione <pos> cerca la posizione di bookmark precedente
       # -1 se non trovato
-      for i in xrange(pos - 1, -1, -1):
+      for i in range(pos - 1, -1, -1):
          UndoRecord = self.UndoRecordList[i]
          if UndoRecord.undoType == QadUndoRecordTypeEnum.BOOKMARK:
             return i

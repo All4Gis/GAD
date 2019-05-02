@@ -1,37 +1,28 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando UNDO e REDO di QAD
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_textwindow import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_textwindow import *
 
 
 # Classe che gestisce il comando UNDO
@@ -48,10 +39,10 @@ class QadUNDOCommandClass(QadCommandClass):
       return "UNDO"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runUNDOCommand)
+      action.triggered.connect(self.plugIn.runUNDOCommand)
 
    def getIcon(self):
-      return QIcon(":/plugins/qad/icons/undo.png")
+      return QIcon(":/plugins/qad/icons/undo.svg")
    
    def getNote(self):
       # impostare le note esplicative del comando      
@@ -178,10 +169,10 @@ class QadREDOCommandClass(QadCommandClass):
       return "REDO"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runREDOCommand)
+      action.triggered.connect(self.plugIn.runREDOCommand)
 
    def getIcon(self):
-      return QIcon(":/plugins/qad/icons/redo.png")
+      return QIcon(":/plugins/qad/icons/redo.svg")
    
    def getNote(self):
       # impostare le note esplicative del comando      

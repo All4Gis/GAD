@@ -1,35 +1,27 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire le variabili di ambiente
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
+
+from PyQt5.QtCore import *
 import os.path
 from qgis.core import *
 
 
-import qad_utils
-from qad_msg import QadMsg
+from . import qad_utils
+from .qad_msg import QadMsg
 
 
 #===============================================================================
@@ -396,7 +388,165 @@ class QadVariablesClass():
                                                             None, None, \
                                                             VariableDescr, \
                                                             QadVariableLevelEnum.PROJECT)
-      
+
+      # DYNDIGRIP (int): Controlla la visualizzazione delle quote dinamiche durante la modifica dello stiramento dei grip. Variabile globale.
+      # La variabile di sistema DYNDIVIS deve essere impostata su 2 per visualizzare tutte le quote dinamiche.
+      # L'impostazione è memorizzata come codice binario che utilizza la somma dei valori 
+      VariableName = QadMsg.translate("Environment variables", "DYNDIGRIP") # x lupdate
+      VariableDescr = QadMsg.translate("Environment variables", "Turns Dynamic Input features on and off." + \
+                                       "\n0 = None." + \
+                                       "\n1 = Resulting dimension." + \
+                                       "\n2 = Length change dimension." + \
+                                       "\n4 = Absolute angle dimension." + \
+                                       "\n8 = Angle change dimension.") # x lupdate
+                                       #"\n16 = Arc radius dimension.") # non supportato per ora
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Integer type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(31), \
+                                                            QadVariableTypeEnum.INT, \
+                                                            0, 31, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
+
+      # DYNDIVIS (int): Controlla il numero di quote dinamiche visualizzate durante la modifica dello stiramento dei grip. Variabile globale.
+      VariableName = QadMsg.translate("Environment variables", "DYNDIVIS") # x lupdate
+      VariableDescr = QadMsg.translate("Environment variables", "Controls how many dynamic dimensions are displayed during grip stretch editing." + \
+                                       "\n0 = Only the first dynamic dimension in the cycle order." + \
+                                       "\n1 = Only the first two dynamic dimensions in the cycle order." + \
+                                       "\n2 = All dynamic dimensions, as controlled by the DYNDIGRIP system variable.") # x lupdate
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Integer type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(1), \
+                                                            QadVariableTypeEnum.INT, \
+                                                            0, 2, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
+
+      # DYNEDITFORECOLOR (str): Imposta il colore (RGB) del testo della finestra di input dinamico. Variabile globale.
+      VariableName = QadMsg.translate("Environment variables", "DYNEDITFORECOLOR") # x lupdate
+      VariableDescr = QadMsg.translate("Environment variables", "Dynamic input text color (RGB, #000000 = black).") # x lupdate                                       
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Character type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, unicode("#000000"), \
+                                                            QadVariableTypeEnum.COLOR, \
+                                                            None, None, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
+
+      # DYNEDITBACKCOLOR (str): Imposta il colore (RGB) dello sfondo della finestra di input dinamico. Variabile globale.
+      VariableName = QadMsg.translate("Environment variables", "DYNEDITBACKCOLOR") # x lupdate
+      VariableDescr = QadMsg.translate("Environment variables", "Dynamic input background text color (RGB, #939393 = gray).") # x lupdate                                       
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Character type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, unicode("#939393"), \
+                                                            QadVariableTypeEnum.COLOR, \
+                                                            None, None, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
+
+      # DYNEDITBORDERCOLOR (str): Imposta il colore (RGB) del bordo della finestra di input dinamico. Variabile globale.
+      VariableName = QadMsg.translate("Environment variables", "DYNEDITBORDERCOLOR") # x lupdate
+      VariableDescr = QadMsg.translate("Environment variables", "Dynamic input border color (RGB, #000000 = black).") # x lupdate                                       
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Character type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, unicode("#000000"), \
+                                                            QadVariableTypeEnum.COLOR, \
+                                                            None, None, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
+
+      # DYNMODE (int): Attiva e disattiva le funzioni di input dinamico. Variabile globale.
+      VariableName = QadMsg.translate("Environment variables", "DYNMODE") # x lupdate
+      VariableDescr = QadMsg.translate("Environment variables", "Turns Dynamic Input features on and off." + \
+                                       "\n0 = All Dynamic Input features, including dynamic prompts, off." + \
+                                       "\n1 = Pointer input on." + \
+                                       "\n2 = Dimensional input on." + \
+                                       "\n3 = Both pointer input and dimensional input on.") # x lupdate
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Integer type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(3), \
+                                                            QadVariableTypeEnum.INT, \
+                                                            -3, 3, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
+
+      # DYNPICOORDS (int): Determina se l'input del puntatore utilizza un formato relativo o assoluto per le coordinate. Variabile globale.
+      VariableName = QadMsg.translate("Environment variables", "DYNPICOORDS") # x lupdate
+      VariableDescr = QadMsg.translate("Environment variables", "Controls whether pointer input uses relative or absolute format for coordinates." + \
+                                       "\n0 = Relative." + \
+                                       "\n1 = Absolute.") # x lupdate
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Integer type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(0), \
+                                                            QadVariableTypeEnum.INT, \
+                                                            0, 1, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
+
+      # DYNPIFORMAT (int): Determina se l'input del puntatore utilizza un formato polare o cartesiano per le coordinate. Variabile globale.
+      VariableName = QadMsg.translate("Environment variables", "DYNPIFORMAT") # x lupdate
+      VariableDescr = QadMsg.translate("Environment variables", "Controls whether pointer input uses polar or cartesian format for coordinates." + \
+                                       "\n0 = Polar." + \
+                                       "\n1 = Cartesian.") # x lupdate
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Integer type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(0), \
+                                                            QadVariableTypeEnum.INT, \
+                                                            0, 1, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
+
+      # DYNPIVIS (int): Controlla quando è visualizzato l'input puntatore. Variabile globale.
+      VariableName = QadMsg.translate("Environment variables", "DYNPIVIS") # x lupdate
+      VariableDescr = QadMsg.translate("Environment variables", "Controls when pointer input is displayed." + \
+                                       "\n1 = Automatically at a prompt for a point." + \
+                                       "\n2 = Always.") # x lupdate
+                                       #"\n0 = Only when you type at a prompt for a point." + \ non supportato, per ora
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Integer type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(1), \
+                                                            QadVariableTypeEnum.INT, \
+                                                            0, 2, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
+
+      # DYNPROMPT (int): Controlla la visualizzazione dei messaggi di richiesta nelle descrizioni di input dinamico. Variabile globale.
+      VariableName = QadMsg.translate("Environment variables", "DYNPROMPT") # x lupdate
+      VariableDescr = QadMsg.translate("Environment variables", "Controls display of prompts in Dynamic Input tooltips." + \
+                                       "\n0 = Off." + \
+                                       "\n1 = On.") # x lupdate
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Integer type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(1), \
+                                                            QadVariableTypeEnum.INT, \
+                                                            0, 1, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
+
+      # DYNTOOLTIPS (int): Determina su quali tooltip hanno effetto le impostazioni dell'aspetto delle descrizioni. Variabile globale.
+      VariableName = QadMsg.translate("Environment variables", "DYNTOOLTIPS") # x lupdate
+      VariableDescr = QadMsg.translate("Environment variables", "Controls which tooltips are affected by tooltip appearance settings." + \
+                                       "\n0 = Only Dynamic Input value fields ." + \
+                                       "\n1 = All drafting tooltips.") # x lupdate
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Integer type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(1), \
+                                                            QadVariableTypeEnum.INT, \
+                                                            0, 1, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
+
+      # DYNTRECKINGVECTORCOLOR (str): Imposta il colore (RGB) del vettore track per l'imput dinamico (linee di estensione). Variabile globale.
+      VariableName = QadMsg.translate("Environment variables", "DYNTRECKINGVECTORCOLOR") # x lupdate
+      VariableDescr = QadMsg.translate("Environment variables", "Autotreck vector color (RGB, #969C9A = gray).") # x lupdate                                       
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Character type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, unicode("#969C9A"), \
+                                                            QadVariableTypeEnum.COLOR, \
+                                                            None, None, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
+
       # EDGEMODE (int): Controlla i comandi ESTENDI e TAGLIA. Variabile globale.
       # O = Vengono usate le dimensioni reali degli oggetti di riferimento
       # 1 = Vengono usate le estensioni  degli oggetti di riferimento (es. un arco viene considerato cerchio)
@@ -526,7 +676,7 @@ class QadVariablesClass():
                                        "\nThe time delay setting in the INPUTSEARCHOPTIONS system variable must be turned on for INPUTSEARCHDELAY to have an effect.") # x lupdate      
       VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Integer type")
       VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
-      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(300), \
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(500), \
                                                             QadVariableTypeEnum.INT, \
                                                             100, 10000, \
                                                             VariableDescr, \
@@ -823,7 +973,33 @@ class QadVariablesClass():
                                                             0.000001, None, \
                                                             VariableDescr, \
                                                             QadVariableLevelEnum.PROJECT)
+
+      # TOOLTIPTRANSPARENCY (int): Imposta la trasparenza della finestra di input dinamico. Variabile globale.
+      VariableName = QadMsg.translate("Environment variables", "TOOLTIPTRANSPARENCY") # x lupdate
+      VariableDescr = QadMsg.translate("Environment variables", "Sets the transparency for drafting tooltips." + \
+                                       "\nThe valid range is 0 to 100. When a value of 0 is used, the drafting tooltip is opaque." + \
+                                       "\nGreater values increase the transparency of the drafting tooltip.") # x lupdate
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Integer type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(0), \
+                                                            QadVariableTypeEnum.INT, \
+                                                            0, 100, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
       
+      # TOOLTIPSIZE (int):    . Variabile globale.
+      VariableName = QadMsg.translate("Environment variables", "TOOLTIPSIZE") # x lupdate
+      VariableDescr = QadMsg.translate("Environment variables", "Sets the display size for drafting tooltips, and dynamic input text." + \
+                                       "\nValid range is -3 to 6. Greater values result in larger drafting tooltips, and larger automatic completion text at the Command prompt." + \
+                                       "\nNegative values represent smaller sizes than the default.") # x lupdate
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Integer type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(0), \
+                                                            QadVariableTypeEnum.INT, \
+                                                            -3, 6, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
+
       # WINDOWAREACOLOR (str): Imposta il colore (RGB) dell'area di selezione degli oggetti nel modo finestra. Variabile globale.
       VariableName = QadMsg.translate("Environment variables", "WINDOWAREACOLOR") # x lupdate
       VariableDescr = QadMsg.translate("Environment variables", "Controls the color of the transparent selection area during window selection (RGB, #1F78B4 = blu)." + \

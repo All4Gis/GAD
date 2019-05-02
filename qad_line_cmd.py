@@ -1,43 +1,34 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando PLINE per disegnare una linea
- 
-                              -------------------
-        begin                : 2013-07-15
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_getpoint import *
-from qad_line_maptool import *
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_textwindow import *
-from qad_snapper import *
-import qad_utils
-import qad_layer
-from qad_rubberband import createRubberBand
+from .qad_getpoint import *
+from .qad_line_maptool import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_textwindow import *
+from .qad_snapper import *
+from . import qad_utils
+from . import qad_layer
+from .qad_rubberband import createRubberBand
 
 
 # Classe che gestisce il comando LINE
@@ -54,10 +45,10 @@ class QadLINECommandClass(QadCommandClass):
       return "LINE"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runLINECommand)
+      action.triggered.connect(self.plugIn.runLINECommand)
 
    def getIcon(self):
-      return QIcon(":/plugins/qad/icons/line.png")
+      return QIcon(":/plugins/qad/icons/line.svg")
 
    def getNote(self):
       # impostare le note esplicative del comando
@@ -66,7 +57,7 @@ class QadLINECommandClass(QadCommandClass):
    def __init__(self, plugIn):
       QadCommandClass.__init__(self, plugIn)
       self.vertices = []
-      self.rubberBand = createRubberBand(self.plugIn.canvas, QGis.Line)
+      self.rubberBand = createRubberBand(self.plugIn.canvas, QgsWkbTypes.LineGeometry)
       self.firstPtTan = None
       self.firstPtPer = None      
       # se questo flag = True il comando serve all'interno di un altro comando per disegnare una linea
@@ -141,17 +132,17 @@ class QadLINECommandClass(QadCommandClass):
       i = 1
       while i < len(self.vertices):                     
          # per lo snap aggiungo questa geometria temporanea
-         self.getPointMapTool().appendTmpGeometry(QgsGeometry.fromPolyline([self.vertices[i - 1], self.vertices[i]]))
+         self.getPointMapTool().appendTmpGeometry(QgsGeometry.fromPolylineXY([self.vertices[i - 1], self.vertices[i]]))
          i = i + 1
 
             
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
 
       if self.virtualCmd == False: # se si vuole veramente salvare la polylinea in un layer   
-         currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, QGis.Line)
+         currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, QgsWkbTypes.LineGeometry)
          if currLayer is None:
             self.showErr(errMsg)
             return True # fine comando
@@ -161,9 +152,7 @@ class QadLINECommandClass(QadCommandClass):
          # imposto il map tool
          self.getPointMapTool().setMode(Qad_line_maptool_ModeEnum.NONE_KNOWN_ASK_FOR_FIRST_PT)
          # si appresta ad attendere un punto o enter
-         #                        msg, inputType,              default, keyWords, nessun controllo         
-         self.waitFor(QadMsg.translate("Command_LINE", "Specify first point: "), \
-                      QadInputTypeEnum.POINT2D, None, "", QadInputModeEnum.NONE)
+         self.waitForPoint(QadMsg.translate("Command_LINE", "Specify first point: "))
          self.step = 1
          return False
       
@@ -204,7 +193,7 @@ class QadLINECommandClass(QadCommandClass):
                   return False                  
                else:
                   self.getPointMapTool().firstPt = self.vertices[-1]
-                  self.getPointMapTool().setMode(Qad_line_maptool_ModeEnum.FIRST_PT_KNOWN_ASK_FOR_SECOND_PT)        
+                  self.getPointMapTool().setMode(Qad_line_maptool_ModeEnum.FIRST_PT_KNOWN_ASK_FOR_SECOND_PT)
             elif value == QadMsg.translate("Command_LINE", "Close") or value == "Close":
                newPt = self.vertices[0]
                self.addVertex(newPt) # aggiungo un nuovo vertice
@@ -226,7 +215,7 @@ class QadLINECommandClass(QadCommandClass):
                      self.firstPtPer = None
                      self.firstPtTan = value
                      self.firstGeom = QgsGeometry(entity.getGeometry()) # duplico la geometria         
-                     coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs()) # trasformo la geometria
+                     coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs(),QgsProject.instance()) # trasformo la geometria
                      self.firstGeom.transform(coordTransform)
                      # imposto il map tool
                      self.getPointMapTool().tan1 = self.firstPtTan
@@ -235,7 +224,7 @@ class QadLINECommandClass(QadCommandClass):
                   # se era stato selezionato un punto con la modalità TAN_DEF   
                   elif self.firstPtTan is not None:
                      secondGeom = QgsGeometry(entity.getGeometry()) # duplico la geometria         
-                     coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs()) # trasformo la geometria
+                     coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs(),QgsProject.instance()) # trasformo la geometria
                      secondGeom.transform(coordTransform)
                      tangent = qad_utils.lineFrom2TanPts(self.firstGeom, self.firstPtTan, secondGeom, value)
                      if tangent is not None:
@@ -255,7 +244,7 @@ class QadLINECommandClass(QadCommandClass):
                   # se era stato selezionato un punto con la modalità PER_DEF              
                   elif self.firstPtPer is not None:
                      secondGeom = QgsGeometry(entity.getGeometry()) # duplico la geometria         
-                     coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs()) # trasformo la geometria
+                     coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs(),QgsProject.instance()) # trasformo la geometria
                      secondGeom.transform(coordTransform)
                      tangent = qad_utils.lineFromTanPerPts(secondGeom, value, self.firstGeom, self.firstPtPer)
                      if tangent is not None:
@@ -280,7 +269,7 @@ class QadLINECommandClass(QadCommandClass):
                      self.firstPtTan = None
                      self.firstPtPer = value
                      self.firstGeom = QgsGeometry(entity.getGeometry()) # duplico la geometria         
-                     coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs()) # trasformo la geometria
+                     coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs(),QgsProject.instance()) # trasformo la geometria
                      self.firstGeom.transform(coordTransform)         
                      # imposto il map tool
                      self.getPointMapTool().per1 = self.firstPtPer
@@ -289,7 +278,7 @@ class QadLINECommandClass(QadCommandClass):
                   # se era stato selezionato un punto con la modalità TAN_DEF   
                   elif self.firstPtTan is not None:
                      secondGeom = QgsGeometry(entity.getGeometry()) # duplico la geometria         
-                     coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs()) # trasformo la geometria
+                     coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs(),QgsProject.instance()) # trasformo la geometria
                      secondGeom.transform(coordTransform)
                      tangent = qad_utils.lineFromTanPerPts(self.firstGeom, self.firstPtTan, secondGeom, value)
                      if tangent is not None:
@@ -309,7 +298,7 @@ class QadLINECommandClass(QadCommandClass):
                   # se era stato selezionato un punto con la modalità PER_DEF              
                   elif self.firstPtPer is not None:
                      secondGeom = QgsGeometry(entity.getGeometry()) # duplico la geometria         
-                     coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs()) # trasformo la geometria
+                     coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs(),QgsProject.instance()) # trasformo la geometria
                      secondGeom.transform(coordTransform)
                      line = qad_utils.lineFrom2PerPts(self.firstGeom, self.firstPtPer, secondGeom, value)
                      if line is not None:
@@ -385,11 +374,12 @@ class QadLINECommandClass(QadCommandClass):
          if len(self.vertices) > 2:
             keyWords = QadMsg.translate("Command_LINE", "Close") + "/" + \
                        QadMsg.translate("Command_LINE", "Undo")
+            englishKeyWords = "Close" + "/" + "Undo"
          else:
             keyWords = QadMsg.translate("Command_LINE", "Undo")
+            englishKeyWords = "Undo"
          prompt = QadMsg.translate("Command_LINE", "Specify next point or [{0}]: ").format(keyWords)
             
-         englishKeyWords = "Close" + "/" + "Undo"
          keyWords += "_" + englishKeyWords
          # si appresta ad attendere un punto o enter o una parola chiave         
          # msg, inputType, default, keyWords, nessun controllo

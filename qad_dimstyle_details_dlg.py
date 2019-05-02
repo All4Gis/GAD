@@ -1,43 +1,36 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- classe per gestire la dialog per DIMSTYLE
- 
-                              -------------------
-        begin                : 2015-05-19
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QDialog
 from qgis.core import *
 from qgis.core import QgsApplication
 from qgis.utils import *
 from qgis.gui import *
 
-import qad_dimstyle_details_ui
+from . import qad_dimstyle_details_ui
 
-from qad_variables import *
-from qad_dim import *
-from qad_msg import QadMsg, qadShowPluginHelp
-import qad_layer
-import qad_utils
+from .qad_variables import *
+from .qad_dim import *
+from .qad_msg import QadMsg, qadShowPluginHelp
+from . import qad_layer
+from . import qad_utils
 
 
 #===============================================================================
@@ -131,7 +124,7 @@ class QadDIMSTYLE_DETAILS_Dialog(QDialog, QObject, qad_dimstyle_details_ui.Ui_Di
       self.onInit = True 
       # layer linee
       for index, layer in enumerate(self.plugIn.iface.legendInterface().layers()):      
-         if (layer.type() == QgsMapLayer.VectorLayer) and layer.geometryType() == QGis.Line:
+         if (layer.type() == QgsMapLayer.VectorLayer) and layer.geometryType() == QgsWkbTypes.LineGeometry:
             self.linearLayerName.addItem(layer.name(), index)      
       # seleziono un elemento della lista
       if self.dimStyle.linearLayerName is not None:
@@ -218,7 +211,7 @@ class QadDIMSTYLE_DETAILS_Dialog(QDialog, QObject, qad_dimstyle_details_ui.Ui_Di
          self.lineTypeFieldName.clear() # remove all items and add an empty row (optional parameter)
          self.lineTypeFieldName.addItem("")
 
-         for field in layer.pendingFields():
+         for field in layer.fields():
             if field.type() == QVariant.String:
                self.lineTypeFieldName.addItem(field.name(), field)
 
@@ -255,7 +248,7 @@ class QadDIMSTYLE_DETAILS_Dialog(QDialog, QObject, qad_dimstyle_details_ui.Ui_Di
          self.idParentFieldName.clear() # remove all items and add an empty row (optional parameter)
          self.idParentFieldName.addItem("")
          
-         for field in layer.pendingFields():
+         for field in layer.fields():
             if field.type() == QVariant.String:
                self.symbolFieldName.addItem(field.name(), field)               
                self.componentFieldName.addItem(field.name(), field)
@@ -299,7 +292,7 @@ class QadDIMSTYLE_DETAILS_Dialog(QDialog, QObject, qad_dimstyle_details_ui.Ui_Di
          self.colorFieldName.clear() # remove all items and add an empty row (optional parameter)
          self.colorFieldName.addItem("")
          
-         for field in layer.pendingFields():
+         for field in layer.fields():
             if field.type() == QVariant.String:
                self.dimStyleFieldName.addItem(field.name(), field)
                self.dimTypeFieldName.addItem(field.name(), field)
@@ -332,6 +325,7 @@ class QadDIMSTYLE_DETAILS_Dialog(QDialog, QObject, qad_dimstyle_details_ui.Ui_Di
       self.onInit = True 
       self.dimLineColor.setColor(QColor(self.dimStyle.dimLineColor))
       self.dimLineLineType.setText(self.dimStyle.dimLineLineType)
+      self.dimLineOffsetExtLine.setValue(self.dimStyle.dimLineOffsetExtLine)
       self.dimLine1Hide.setChecked(not self.dimStyle.dimLine1Show)
       self.dimLine2Hide.setChecked(not self.dimStyle.dimLine2Show)
       
@@ -350,6 +344,7 @@ class QadDIMSTYLE_DETAILS_Dialog(QDialog, QObject, qad_dimstyle_details_ui.Ui_Di
    def accept_lines_tab(self):     
       self.dimStyle.dimLineColor = self.dimLineColor.color().name()
       self.dimStyle.dimLineLineType = self.dimLineLineType.text()
+      self.dimStyle.dimLineOffsetExtLine = self.dimLineOffsetExtLine.value()
       self.dimStyle.dimLine1Show = not self.dimLine1Hide.isChecked()
       self.dimStyle.dimLine2Show = not self.dimLine2Hide.isChecked()
 
@@ -379,6 +374,9 @@ class QadDIMSTYLE_DETAILS_Dialog(QDialog, QObject, qad_dimstyle_details_ui.Ui_Di
       self.redrawDimOnLinesTabChanged()
 
    def dimLineLineTypeChanged(self, value):
+      self.redrawDimOnLinesTabChanged()
+
+   def dimLineOffsetExtLineChanged(self, value):
       self.redrawDimOnLinesTabChanged()
 
    def extLineColorChanged(self, value):
@@ -425,10 +423,21 @@ class QadDIMSTYLE_DETAILS_Dialog(QDialog, QObject, qad_dimstyle_details_ui.Ui_Di
       self.blockLeaderName.setText(self.dimStyle.blockLeaderName)
       self.blockWidth.setValue(self.dimStyle.blockWidth)
       self.blockScale.setValue(self.dimStyle.blockScale)
+
+      # centerMarkSize 0 = niente, > 0 dimensione marcatore di centro, < 0 dimensione linee d'asse
+      if self.dimStyle.centerMarkSize == 0:
+         self.centerMarkNone.setChecked(True)
+         self.centerMarkLength.setValue(self.dimStyle.centerMarkSize)
+      elif self.dimStyle.centerMarkSize > 0:
+         self.centerMarkMark.setChecked(True)
+         self.centerMarkLength.setValue(self.dimStyle.centerMarkSize)
+      elif self.dimStyle.centerMarkSize < 0:
+         self.centerMarkLine.setChecked(True)
+         self.centerMarkLength.setValue(-self.dimStyle.centerMarkSize)
       
       # arcSymbPos
       if self.dimStyle.arcSymbPos == QadDimStyleArcSymbolPosEnum.BEFORE_TEXT:
-         self.arcSymbolPreceding.setChecked(True)         
+         self.arcSymbolPreceding.setChecked(True)
       elif self.dimStyle.arcSymbPos == QadDimStyleArcSymbolPosEnum.ABOVE_TEXT:
          self.arcSymbolAbove.setChecked(True)
       elif self.dimStyle.arcSymbPos == QadDimStyleArcSymbolPosEnum.NONE:
@@ -443,6 +452,14 @@ class QadDIMSTYLE_DETAILS_Dialog(QDialog, QObject, qad_dimstyle_details_ui.Ui_Di
       self.dimStyle.blockWidth = self.blockWidth.value()      
       self.dimStyle.blockScale = self.blockScale.value()      
 
+      # centerMarkSize 0 = niente, > 0 dimensione marcatore di centro, < 0 dimensione linee d'asse
+      if self.centerMarkNone.isChecked():
+         self.dimStyle.centerMarkSize = 0
+      elif self.centerMarkMark.isChecked():
+         self.dimStyle.centerMarkSize = self.centerMarkLength.value()
+      elif self.centerMarkLine.isChecked():
+         self.dimStyle.centerMarkSize = -self.centerMarkLength.value()
+         
       # textForcedRot
       if self.arcSymbolPreceding.isChecked():
          self.dimStyle.arcSymbPos = QadDimStyleArcSymbolPosEnum.BEFORE_TEXT
@@ -473,6 +490,27 @@ class QadDIMSTYLE_DETAILS_Dialog(QDialog, QObject, qad_dimstyle_details_ui.Ui_Di
       self.redrawDimOnSymbolsTabChanged()
 
    def blockScaleChanged(self, value):
+      self.redrawDimOnSymbolsTabChanged()
+
+   def centerMarkNoneChanged(self, value):
+      self.centerMarkMark.setChecked(False)
+      self.centerMarkLine.setChecked(False)
+      self.centerMarkLength.setEnabled(False)
+      self.redrawDimOnSymbolsTabChanged()
+
+   def centerMarkMarkChanged(self, value):
+      self.centerMarkNone.setChecked(False)
+      self.centerMarkLine.setChecked(False)
+      self.centerMarkLength.setEnabled(True)
+      self.redrawDimOnSymbolsTabChanged()
+
+   def centerMarkLineChanged(self, value):
+      self.centerMarkNone.setChecked(False)
+      self.centerMarkMark.setChecked(False)
+      self.centerMarkLength.setEnabled(True)
+      self.redrawDimOnSymbolsTabChanged()
+
+   def centerMarkLengthChanged(self, value):
       self.redrawDimOnSymbolsTabChanged()
 
    def arcSymbolPrecedingToggled(self, value):
@@ -893,7 +931,7 @@ class QadPreviewDim(QgsMapCanvas):
       if layerId == None:
          layer = self.iface.activeLayer()
       else:
-         layer = QgsMapLayerRegistry.instance().mapLayer( layerId )
+         layer = QgsProject.instance().mapLayer( layerId )
 
       if layer == None:
          return
@@ -1014,9 +1052,9 @@ class QadPreviewDim(QgsMapCanvas):
 
       ###########################
       # quota lineare orizzontale
-      dimPt1 = QgsPoint(0, 0)
-      dimPt2 = QgsPoint(13.45, 0)
-      linePosPt = QgsPoint(0, 10)
+      dimPt1 = QgsPointXY(0, 0)
+      dimPt2 = QgsPointXY(13.45, 0)
+      linePosPt = QgsPointXY(0, 10)
       
       # calcolo il rettangolo di occupazione della quota
       dimEntity, textOffsetRectGeom = self.dimStyle.getLinearDimFeatures(self.plugIn.canvas, \
@@ -1031,9 +1069,9 @@ class QadPreviewDim(QgsMapCanvas):
       
       ###########################
       # quota lineare verticale
-      dimPt1 = QgsPoint(0, 0)
-      dimPt2 = QgsPoint(0, -15.7)
-      linePosPt = QgsPoint(-9, 0)
+      dimPt1 = QgsPointXY(0, 0)
+      dimPt2 = QgsPointXY(0, -15.7)
+      linePosPt = QgsPointXY(-9, 0)
       
       # calcolo il rettangolo di occupazione della quota
       dimEntity, textOffsetRectGeom = self.dimStyle.getLinearDimFeatures(self.plugIn.canvas, \
@@ -1050,9 +1088,9 @@ class QadPreviewDim(QgsMapCanvas):
 
       ###########################
       # quota allineata obliqua
-      dimPt1 = QgsPoint(13.45, 0)
-      dimPt2 = QgsPoint(23, -20)
-      linePosPt = QgsPoint(23, 0)
+      dimPt1 = QgsPointXY(13.45, 0)
+      dimPt2 = QgsPointXY(23, -20)
+      linePosPt = QgsPointXY(23, 0)
       
       # calcolo il rettangolo di occupazione della quota
       dimEntity, textOffsetRectGeom = self.dimStyle.getAlignedDimFeatures(self.plugIn.canvas, \
@@ -1068,8 +1106,8 @@ class QadPreviewDim(QgsMapCanvas):
       ###########################
       # quota arco
       dimArc = QadArc()
-      dimArc.fromStartSecondEndPts(QgsPoint(23, -20), QgsPoint(10, -15), QgsPoint(0, -15.7))
-      linePosPt = QgsPoint(13, -13)
+      dimArc.fromStartSecondEndPts(QgsPointXY(23, -20), QgsPointXY(10, -15), QgsPointXY(0, -15.7))
+      linePosPt = QgsPointXY(13, -13)
       
       # calcolo il rettangolo di occupazione della quota
       dimEntity, textOffsetRectGeom = self.dimStyle.getArcDimFeatures(self.plugIn.canvas, \

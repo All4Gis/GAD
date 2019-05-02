@@ -1,44 +1,36 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- comando MIRROR per spostare oggetti
- 
-                              -------------------
-        begin                : 2013-12-11
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_mirror_maptool import *
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_getpoint import *
-from qad_textwindow import *
-from qad_ssget_cmd import QadSSGetClass
-from qad_entity import *
-import qad_utils
-import qad_layer
-import qad_label
+from .qad_mirror_maptool import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_getpoint import *
+from .qad_textwindow import *
+from .qad_ssget_cmd import QadSSGetClass
+from .qad_entity import *
+from . import qad_utils
+from . import qad_layer
+from . import qad_label
 
 
 # Classe che gestisce il comando MIRROR
@@ -55,7 +47,7 @@ class QadMIRRORCommandClass(QadCommandClass):
       return "MIRROR"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runMIRRORCommand)
+      action.triggered.connect(self.plugIn.runMIRRORCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/mirror.png")
@@ -69,8 +61,8 @@ class QadMIRRORCommandClass(QadCommandClass):
       self.SSGetClass = QadSSGetClass(plugIn)
       self.SSGetClass.onlyEditableLayers = True
       self.entitySet = QadEntitySet()
-      self.firstMirrorPt = QgsPoint()
-      self.secondMirrorPt = QgsPoint()
+      self.firstMirrorPt = QgsPointXY()
+      self.secondMirrorPt = QgsPointXY()
       self.copyFeatures = True
 
    def __del__(self):
@@ -92,7 +84,7 @@ class QadMIRRORCommandClass(QadCommandClass):
 
    def getCurrentContextualMenu(self):
       if self.step == 0: # quando si é in fase di selezione entità
-         return self.SSGetClass.getCurrentContextualMenu()
+         return None # return self.SSGetClass.getCurrentContextualMenu()
       else:
          return self.contextualMenu
 
@@ -189,7 +181,7 @@ class QadMIRRORCommandClass(QadCommandClass):
    
 
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
             
@@ -343,8 +335,8 @@ class QadGRIPMIRRORCommandClass(QadCommandClass):
    def __init__(self, plugIn):
       QadCommandClass.__init__(self, plugIn)
       self.entitySet = QadEntitySet()
-      self.basePt = QgsPoint()
-      self.secondMirrorPt = QgsPoint()
+      self.basePt = QgsPointXY()
+      self.secondMirrorPt = QgsPointXY()
       self.skipToNextGripCommand = False
       self.copyEntities = False
       self.nOperationsToUndo = 0
@@ -506,7 +498,7 @@ class QadGRIPMIRRORCommandClass(QadCommandClass):
    
 
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
             
@@ -559,7 +551,7 @@ class QadGRIPMIRRORCommandClass(QadCommandClass):
                self.waitForMirrorPoint()
             elif value == QadMsg.translate("Command_GRIPMIRROR", "eXit") or value == "eXit":
                return True # fine comando
-         elif type(value) == QgsPoint: # se é stato inserito il secondo punto
+         elif type(value) == QgsPointXY: # se é stato inserito il secondo punto
             if qad_utils.ptNear(self.basePt, value):
                self.showMsg(QadMsg.translate("Command_GRIPMIRROR", "\nThe points must be different."))
                # si appresta ad attendere il secondo punto di specchio
@@ -606,7 +598,7 @@ class QadGRIPMIRRORCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito il punto base
+         if type(value) == QgsPointXY: # se é stato inserito il punto base
             self.basePt.set(value.x(), value.y())
             
          # si appresta ad attendere il secondo punto di specchio

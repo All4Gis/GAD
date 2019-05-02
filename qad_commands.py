@@ -1,82 +1,74 @@
-# -*- coding: utf-8 -*-
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire i comandi
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QMessageBox
 from qgis.core import *
 from qgis.gui import *
 
 import sys, traceback
 
-from qad_maptool import QadMapTool, QadVirtualSelCommandClass, QadVirtualGripCommandsClass
-from qad_msg import QadMsg
-from qad_cmd_aliases import *
-from qad_variables import QadVariables
+from .qad_maptool import QadMapTool, QadVirtualSelCommandClass, QadVirtualGripCommandsClass
+from .qad_msg import QadMsg
+from .qad_cmd_aliases import *
+from .qad_variables import QadVariables
 
-from qad_getpoint import *
-from qad_generic_cmd import QadCommandClass
-from qad_id_cmd import QadIDCommandClass
-from qad_setcurrlayerbygraph_cmd import QadSETCURRLAYERBYGRAPHCommandClass, QadSETCURRUPDATEABLELAYERBYGRAPHCommandClass
-from qad_setvar_cmd import QadSETVARCommandClass
-from qad_pline_cmd import QadPLINECommandClass
-from qad_arc_cmd import QadARCCommandClass
-from qad_circle_cmd import QadCIRCLECommandClass
-from qad_dsettings_cmd import QadDSETTINGSCommandClass
-from qad_line_cmd import QadLINECommandClass
-from qad_erase_cmd import QadERASECommandClass
-from qad_mpolygon_cmd import QadMPOLYGONCommandClass
-from qad_mbuffer_cmd import QadMBUFFERCommandClass
-from qad_rotate_cmd import QadROTATECommandClass
-from qad_move_cmd import QadMOVECommandClass
-from qad_scale_cmd import QadSCALECommandClass
-from qad_copy_cmd import QadCOPYCommandClass
-from qad_offset_cmd import QadOFFSETCommandClass
-from qad_extend_cmd import QadEXTENDCommandClass
-from qad_trim_cmd import QadTRIMCommandClass
-from qad_rectangle_cmd import QadRECTANGLECommandClass
-from qad_mirror_cmd import QadMIRRORCommandClass
-from qad_undoredo_cmd import QadUNDOCommandClass, QadREDOCommandClass
-from qad_insert_cmd import QadINSERTCommandClass
-from qad_text_cmd import QadTEXTCommandClass
-from qad_stretch_cmd import QadSTRETCHCommandClass
-from qad_break_cmd import QadBREAKCommandClass
-from qad_pedit_cmd import QadPEDITCommandClass
-from qad_fillet_cmd import QadFILLETCommandClass
-from qad_polygon_cmd import QadPOLYGONCommandClass
-from qad_dim_cmd import QadDIMLINEARCommandClass, QadDIMALIGNEDCommandClass, QadDIMARCCommandClass
-from qad_dimstyle_cmd import QadDIMSTYLECommandClass
-from qad_lengthen_cmd import QadLENGTHENCommandClass
-from qad_help_cmd import QadHELPCommandClass
-from qad_options_cmd import QadOPTIONSCommandClass
-from qad_mapmpedit_cmd import QadMAPMPEDITCommandClass
-from qad_joindisjoin_cmd import QadJOINCommandClass, QadDISJOINCommandClass
-from qad_array_cmd import QadARRAYCommandClass, QadARRAYRECTCommandClass, QadARRAYPATHCommandClass, QadARRAYPOLARCommandClass
-from qad_divide_cmd import QadDIVIDECommandClass
-from qad_measure_cmd import QadMEASURECommandClass
+from .qad_getpoint import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_id_cmd import QadIDCommandClass
+from .qad_setcurrlayerbygraph_cmd import QadSETCURRLAYERBYGRAPHCommandClass, QadSETCURRUPDATEABLELAYERBYGRAPHCommandClass
+from .qad_setvar_cmd import QadSETVARCommandClass
+from .qad_pline_cmd import QadPLINECommandClass
+from .qad_arc_cmd import QadARCCommandClass
+from .qad_circle_cmd import QadCIRCLECommandClass
+from .qad_dsettings_cmd import QadDSETTINGSCommandClass
+from .qad_line_cmd import QadLINECommandClass
+from .qad_erase_cmd import QadERASECommandClass
+from .qad_mpolygon_cmd import QadMPOLYGONCommandClass
+from .qad_mbuffer_cmd import QadMBUFFERCommandClass
+from .qad_rotate_cmd import QadROTATECommandClass
+from .qad_move_cmd import QadMOVECommandClass
+from .qad_scale_cmd import QadSCALECommandClass
+from .qad_copy_cmd import QadCOPYCommandClass
+from .qad_offset_cmd import QadOFFSETCommandClass
+from .qad_extend_cmd import QadEXTENDCommandClass
+from .qad_trim_cmd import QadTRIMCommandClass
+from .qad_rectangle_cmd import QadRECTANGLECommandClass
+from .qad_mirror_cmd import QadMIRRORCommandClass
+from .qad_undoredo_cmd import QadUNDOCommandClass, QadREDOCommandClass
+from .qad_insert_cmd import QadINSERTCommandClass
+from .qad_text_cmd import QadTEXTCommandClass
+from .qad_stretch_cmd import QadSTRETCHCommandClass
+from .qad_break_cmd import QadBREAKCommandClass
+from .qad_pedit_cmd import QadPEDITCommandClass
+from .qad_fillet_cmd import QadFILLETCommandClass
+from .qad_polygon_cmd import QadPOLYGONCommandClass
+from .qad_dim_cmd import QadDIMLINEARCommandClass, QadDIMALIGNEDCommandClass, QadDIMARCCommandClass, QadDIMRADIUSCommandClass
+from .qad_dimstyle_cmd import QadDIMSTYLECommandClass
+from .qad_lengthen_cmd import QadLENGTHENCommandClass
+from .qad_help_cmd import QadHELPCommandClass
+from .qad_options_cmd import QadOPTIONSCommandClass
+from .qad_mapmpedit_cmd import QadMAPMPEDITCommandClass
+from .qad_joindisjoin_cmd import QadJOINCommandClass, QadDISJOINCommandClass
+from .qad_array_cmd import QadARRAYCommandClass, QadARRAYRECTCommandClass, QadARRAYPATHCommandClass, QadARRAYPOLARCommandClass
+from .qad_divide_cmd import QadDIVIDECommandClass
+from .qad_measure_cmd import QadMEASURECommandClass
 
 
 # Classe che gestisce i comandi di Qad
@@ -124,6 +116,7 @@ class QadCommandsClass():
       self.__cmdObjs.append(QadDIMLINEARCommandClass(self.plugIn)) # DIMLINEAR
       self.__cmdObjs.append(QadDIMALIGNEDCommandClass(self.plugIn)) # DIMALIGNED
       self.__cmdObjs.append(QadDIMARCCommandClass(self.plugIn)) # DIMALIGNED
+      self.__cmdObjs.append(QadDIMRADIUSCommandClass(self.plugIn)) # DIMALIGNED
       self.__cmdObjs.append(QadDIMSTYLECommandClass(self.plugIn)) # DIMSTYLE
       self.__cmdObjs.append(QadHELPCommandClass(self.plugIn)) # HELP
       self.__cmdObjs.append(QadLENGTHENCommandClass(self.plugIn)) # LENGTHEN
@@ -463,6 +456,26 @@ class QadCommandsClass():
       pointMapTool.refreshAutoSnap()
 
 
+   #============================================================================
+   # refreshCommandMapToolDynamicInput
+   #============================================================================
+   def refreshCommandMapToolDynamicInput(self):
+      self.plugIn.tool.getDynamicInput().refreshOnEnvVariables()
+            
+      pointMapTool = self.getActualCommandPointMapTool()
+      if pointMapTool is not None:
+         pointMapTool.getDynamicInput().refreshOnEnvVariables()
+         if pointMapTool.getDynamicInput().isActive() == False:
+            pointMapTool.getDynamicInput().show(False)
+         else:
+            pointMapTool.getDynamicInput().show(True)
+      else:
+         if self.plugIn.tool.getDynamicInput().isActive() == False:
+            self.plugIn.tool.getDynamicInput().show(False)
+         else:
+            if self.plugIn.tool.getDynamicInput().resStr != "": # solo se forniva già un risultato
+               self.plugIn.tool.getDynamicInput().show(True)
+
 
    #============================================================================
    # getMoreUsedCmd
@@ -507,7 +520,7 @@ class QadMacroRunnerCommandClass(QadCommandClass):
       return "MACRO_RUNNER"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runREDOCommand)
+      action.triggered.connect(self.plugIn.runREDOCommand)
       
    def __init__(self, plugIn):
       QadCommandClass.__init__(self, plugIn)
@@ -525,6 +538,13 @@ class QadMacroRunnerCommandClass(QadCommandClass):
          return self.command.getPointMapTool(drawMode)
       else:
          return QadCommandClass.getPointMapTool(self, drawMode)
+
+
+   def getCurrentContextualMenu(self):
+      if self.command is None:
+         return None
+      else:
+         return self.command.getCurrentContextualMenu()
 
 
    def setCmdAndOptionsToRun(self, CmdAndArglist):

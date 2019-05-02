@@ -1,31 +1,22 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- funzioni per le etichette
- 
-                              -------------------
-        begin                : 2014-04-24
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 
@@ -96,14 +87,14 @@ def getTokenListFromLblFieldName(expr):
 #===============================================================================
 # get_activeDataDefinedPropertyFieldNames
 #===============================================================================
-def get_activeDataDefinedPropertyFieldNames(layer, dataDefinedProperty):
+def get_activeDataDefinedPropertyFieldNames(properties,key):
    """
-   ritorna la lista dei nomi dei campi che determinano il valore della proprietà attiva
+   returns the list of field names that determine the value of the active property
    """
    result = []
-
-   if (dataDefinedProperty is not None) and dataDefinedProperty.isActive():    
-      if dataDefinedProperty.useExpression():
+   if properties.hasActiveProperties():
+      """
+      if dataDefinedProperty.Expression():
          # estraggo i token
          tokenList = getTokenListFromLblFieldName(dataDefinedProperty.expressionString())
                   
@@ -112,9 +103,9 @@ def get_activeDataDefinedPropertyFieldNames(layer, dataDefinedProperty):
             if field.name() in tokenList:
                if field.name() not in result: # evito duplicati
                   result.append(field.name())
-      else:
-         result.append(dataDefinedProperty.field())
-          
+      else:"""
+      if properties.isActive(key):
+         result.append(property(key).field())
    return result
 
 
@@ -123,13 +114,18 @@ def get_activeDataDefinedPropertyFieldNames(layer, dataDefinedProperty):
 #===============================================================================
 def get_labelFieldNames(layer):
    """
-   ritorna la lista dei campi che concorrono a formare il testo dell'etichetta 
+   it returns the list of the fields that concur to form the text of the label
    """
    result = []
-      
+   labeling = layer.labeling().settings()
+   fields = layer.fields()
+   if not labeling.isExpression: #If not an expression
+      field = labeling.fieldName
+      if fields.field(field): #if its a field only for labeling
+         result.append(field)
+   """
    if layer.type() == QgsMapLayer.VectorLayer:
-      palyr = QgsPalLayerSettings()
-      palyr.readFromLayer(layer)
+      palyr = layer.labeling().settings()
       if palyr.enabled:
          lblFieldName = palyr.fieldName
          if palyr.isExpression: # Is this label made from a expression string eg FieldName || 'mm'.   
@@ -142,8 +138,7 @@ def get_labelFieldNames(layer):
                   if field.name() not in result: # evito duplicati
                      result.append(field.name())
          else:
-            result.append(lblFieldName)         
-               
+            result.append(lblFieldName)     """
    return result
 
 
@@ -155,27 +150,24 @@ def get_labelRotationFieldNames(layer):
    ritorna la lista dei campi che concorrono a formare la rotazione dell'etichetta 
    """
    if layer.type() == QgsMapLayer.VectorLayer:
-      palyr = QgsPalLayerSettings()
-      palyr.readFromLayer(layer)
-      dataDefined = palyr.dataDefinedProperty(QgsPalLayerSettings.Rotation)
-      return get_activeDataDefinedPropertyFieldNames(layer, dataDefined)
+      palyr = layer.labeling().settings()
+      properties = palyr.dataDefinedProperties()
+      return get_activeDataDefinedPropertyFieldNames(properties,14)#Rotation
           
    return []
 
 
 #===============================================================================
 # get_labelSizeFieldNames
+# description:  it returns the list of the fields that concur to form the
+# dimension of the text of the label
 #===============================================================================
 def get_labelSizeFieldNames(layer):
-   """
-   ritorna la lista dei campi che concorrono a formare la dimensione del testo dell'etichetta 
-   """
    if layer.type() == QgsMapLayer.VectorLayer:
-      palyr = QgsPalLayerSettings()
-      palyr.readFromLayer(layer)
-      dataDefined = palyr.dataDefinedProperty(QgsPalLayerSettings.Size)
-      return get_activeDataDefinedPropertyFieldNames(layer, dataDefined)
-          
+      palyr = layer.labeling().settings()
+      properties = palyr.dataDefinedProperties()
+      return get_activeDataDefinedPropertyFieldNames(properties,0)#Size
+
    return []
 
 
@@ -187,10 +179,9 @@ def get_labelFontFamilyFieldNames(layer):
    ritorna la lista dei campi che concorrono a formare il nome del font dell'etichetta 
    """
    if layer.type() == QgsMapLayer.VectorLayer:
-      palyr = QgsPalLayerSettings()
-      palyr.readFromLayer(layer)
-      dataDefined = palyr.dataDefinedProperty(QgsPalLayerSettings.Family)
-      return get_activeDataDefinedPropertyFieldNames(layer, dataDefined)
+      palyr = layer.labeling().settings()
+      properties = palyr.dataDefinedProperties()
+      return get_activeDataDefinedPropertyFieldNames(properties,6)#Family
           
    return []
 

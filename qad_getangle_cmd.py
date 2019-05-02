@@ -1,40 +1,32 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- comando da inserire in altri comandi per la richiesta di un angolo
- 
-                              -------------------
-        begin                : 2013-12-04
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_textwindow import *
-from qad_entity import *
-from qad_getpoint import *
-import qad_utils
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_textwindow import *
+from .qad_entity import *
+from .qad_getpoint import *
+from . import qad_utils
 
 
 #===============================================================================
@@ -57,25 +49,25 @@ class QadGetAngleClass(QadCommandClass):
       self.__prevLastPoint = self.plugIn.lastPoint
             
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
 
       #=========================================================================
       # RICHIESTA PUNTO o ENTITA'
       if self.step == 0: # inizio del comando
-         # si appresta ad attendere un punto o un numero reale         
-         # msg, inputType, default, keyWords, valori non nulli
-         self.waitFor(self.msg, \
-                      QadInputTypeEnum.POINT2D | QadInputTypeEnum.FLOAT, \
-                      self.angle, "", \
-                      QadInputModeEnum.NOT_NULL)
-         
-         if self.startPt is not None:            
+         if self.startPt is not None:
             # imposto il map tool
             self.getPointMapTool().setDrawMode(QadGetPointDrawModeEnum.ELASTIC_LINE)
             self.getPointMapTool().setStartPoint(self.startPt)
-                           
+
+         # si appresta ad attendere un punto o un numero reale         
+         # msg, inputType, default, keyWords, valori non nulli
+         self.waitFor(self.msg, \
+                      QadInputTypeEnum.POINT2D | QadInputTypeEnum.ANGLE, \
+                      self.angle, "", \
+                      QadInputModeEnum.NOT_NULL)
+
          self.step = 1
          return False
 
@@ -104,7 +96,7 @@ class QadGetAngleClass(QadCommandClass):
          if type(value) == float:
             self.angle = qad_utils.toRadians(value)
             return True # fine comando
-         elif type(value) == QgsPoint:
+         elif type(value) == QgsPointXY:
             # il/i punto/i indicato/i da questa questa funzione non devono alterare lastpoint 
             self.plugIn.setLastPoint(self.__prevLastPoint)
             
@@ -116,8 +108,9 @@ class QadGetAngleClass(QadCommandClass):
                # imposto il map tool
                self.getPointMapTool().setDrawMode(QadGetPointDrawModeEnum.ELASTIC_LINE)
                self.getPointMapTool().setStartPoint(self.startPt)
+               prompt = QadMsg.translate("QAD", "Specify second point: ")
                # si appresta ad attendere un punto
-               self.waitForPoint(QadMsg.translate("QAD", "Specify second point: "))
+               self.waitForPoint(prompt)
                self.step = 2
 
          return False

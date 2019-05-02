@@ -1,43 +1,35 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire il map tool in ambito del comando offset
- 
-                              -------------------
-        begin                : 2013-10-04
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import math
 
 
-import qad_utils
-from qad_snapper import *
-from qad_snappointsdisplaymanager import *
-from qad_variables import *
-from qad_getpoint import *
-from qad_highlight import QadHighlight
-from qad_dim import QadDimStyles
-from qad_msg import QadMsg
+from . import qad_utils
+from .qad_snapper import *
+from .qad_snappointsdisplaymanager import *
+from .qad_variables import *
+from .qad_getpoint import *
+from .qad_highlight import QadHighlight
+from .qad_dim import QadDimStyles
+from .qad_msg import QadMsg
 
 
 #===============================================================================
@@ -66,6 +58,7 @@ class Qad_offset_maptool(QadGetPoint):
       self.firstPt = None
       self.layer = None
       self.subGeom = None
+      self.subGeomAsPolyline = None # geometria sotto forma di lista di punti
       self.offSet = 0
       self.lastOffSetOnLeftSide = 0
       self.lastOffSetOnRightSide = 0
@@ -85,14 +78,16 @@ class Qad_offset_maptool(QadGetPoint):
       self.__highlight.reset()
       self.mode = None    
    
+
    def addOffSetGeometries(self, newPt):
-      self.__highlight.reset()            
-      
+      self.__highlight.reset()
+       
       # ritorna una tupla (<The squared cartesian distance>,
       #                    <minDistPoint>
       #                    <afterVertex>
       #                    <leftOf>)
       dummy = qad_utils.closestSegmentWithContext(newPt, self.subGeom)
+       
       if self.offSet < 0:
          afterVertex = dummy[2]
          pt = qad_utils.getPerpendicularPointOnInfinityLine(self.subGeom.vertexAt(afterVertex - 1), \
@@ -101,12 +96,12 @@ class Qad_offset_maptool(QadGetPoint):
          offSetDistance = qad_utils.getDistance(newPt, pt)
       else:           
          offSetDistance = self.offSet
-
+ 
          if dummy[3] < 0: # alla sinistra
             offSetDistance = offSetDistance + self.lastOffSetOnLeftSide
          else: # alla destra
             offSetDistance = offSetDistance + self.lastOffSetOnRightSide         
-      
+       
       tolerance2ApproxCurve = QadVariables.get(QadMsg.translate("Environment variables", "TOLERANCE2APPROXCURVE"))
       # uso il crs del canvas per lavorare con coordinate piane xy
       epsg = self.canvas.mapSettings().destinationCrs().authid()
@@ -115,19 +110,19 @@ class Qad_offset_maptool(QadGetPoint):
                                        "left" if dummy[3] < 0 else "right", \
                                        self.gapType, \
                                        tolerance2ApproxCurve)
-
+ 
       for line in lines:
-         if self.layer.geometryType() == QGis.Polygon:
+         if self.layer.geometryType() == QgsWkbTypes.PolygonGeometry:
             if line[0] == line[-1]: # se é una linea chiusa
-               offsetGeom = QgsGeometry.fromPolygon([line])
+               offsetGeom = QgsGeometry.fromPolygonXY([line])
             else:
-               offsetGeom = QgsGeometry.fromPolyline(line)
+               offsetGeom = QgsGeometry.fromPolylineXY(line)
          else:
-            offsetGeom = QgsGeometry.fromPolyline(line)
-
+            offsetGeom = QgsGeometry.fromPolylineXY(line)
+ 
          self.__highlight.addGeometry(self.mapToLayerCoordinates(self.layer, offsetGeom), self.layer)
-            
-      
+
+
    def canvasMoveEvent(self, event):
       QadGetPoint.canvasMoveEvent(self, event)
       
@@ -180,7 +175,7 @@ class Qad_offset_maptool(QadGetPoint):
          # solo layer lineari o poligono editabili che non appartengano a quote
          layerList = []
          for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
-            if (layer.geometryType() == QGis.Line or layer.geometryType() == QGis.Polygon) and \
+            if (layer.geometryType() == QgsWkbTypes.LineGeometry or layer.geometryType() == QgsWkbTypes.PolygonGeometry) and \
                layer.isEditable():
                if len(QadDimStyles.getDimListByLayer(layer)) == 0:
                   layerList.append(layer)

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    GAD - Geographic Aided Design
+
+     begin      : May 05, 2019
+     copyright  : (c) 2019 by German Perez-Casanova Gomez
+     email      : icearqu@gmail.com
+
+
+    GAD  This program is free software and is distributed in
+    the hope that it will be useful, but without any warranty,
+    you can redistribute it and/or modify it under the terms
+    of version 3 of the GNU General Public License (GPL v3) as
+    published by the Free Software Foundation (www.gnu.org)
+-->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 297.3 297.3" style="enable-background:new 0 0 297.3 297.3;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#40DB68;stroke:#323232;stroke-width:3;stroke-miterlimit:10;}
+</style>
+<path class="st0" d="M22.7,287.7c-28.9-23.4-23-75.4,17.3-120.8c38.9-43.9,82.9-63.3,104.6-71.2c0-23,0-46,0-69l152.5,104.6
+	L145.7,238.1v-72.3c-18.8,2.2-46.9,8-76.8,24.5C16.1,219.4,8.2,266.5,22.7,287.7z"/>
+</svg>

@@ -1,38 +1,31 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per visualizzare i punti di snap
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
+import time # profiling
 
 
-from qad_snapper import *
-from qad_vertexmarker import *
-from qad_rubberband import createRubberBand
-from qad_msg import QadMsg
+from .qad_snapper import *
+from .qad_vertexmarker import *
+from .qad_rubberband import createRubberBand
+from .qad_msg import QadMsg
 
 
 class QadSnapPointsDisplayManager():
@@ -47,7 +40,7 @@ class QadSnapPointsDisplayManager():
    def __init__(self, mapCanvas):
       self.__mapCanvas = mapCanvas
       self.__vertexMarkers = [] # lista dei marcatori puntuali visualizzati
-      self.__startPoint = QgsPoint()  
+      self.__startPoint = QgsPointXY()
       self.__iconSize = QadVariables.get(QadMsg.translate("Environment variables", "AUTOSNAPSIZE"))
       self.__color = QColor(255, 0, 0) # color of the marker
       self.__penWidth = 2 # pen width 
@@ -183,19 +176,29 @@ class QadSnapPointsDisplayManager():
             i = i + 1
             
             if autoSnap & QadAUTOSNAPEnum.DISPLAY_MARK: # Turns on the AutoSnap mark
-               # disegno il marcatore di snap
                self.__vertexMarkers.append(self.getVertexMarker(snapType, point))
+               # disegno il marcatore di snap
+               #self.__vertexMarkers.append(self.getVertexMarker(snapType, point))
 
             if autoSnap & QadAUTOSNAPEnum.DISPLAY_TOOLTIPS: # Turns on the AutoSnap tooltips
                # lo tengo perchè mi può servire
                # trasformo point da map coordinate in global coordinate
-               # item = QadVertexMarker(self.__mapCanvas)
-               # newPt = item.toCanvasCoordinates(point)
-               # item.removeItem()
-               # del item
-               # pt = self.__mapCanvas.mapToGlobal(QPoint(newPt.x(), newPt.y()))
-               # QToolTip.showText(pt, "testo di prova")
-               self.__mapCanvas.setToolTip(snapTypeEnum2str(snapType))
+#                item = QadVertexMarker(self.__mapCanvas)
+#                newPt = item.toCanvasCoordinates(point)
+#                item.removeItem()
+#                del item
+#                pt = self.__mapCanvas.mapToGlobal(QPoint(newPt.x(), newPt.y()))
+#                QToolTip.showText(pt, "testo di prova")
+#                iii = 0
+#                start = time.time() # test
+#                while iii < 100:
+#                   #qad_utils.setMapCanvasToolTip(snapTypeEnum2Descr(snapType))
+#                   self.__mapCanvas.setToolTip(snapTypeEnum2Descr(snapType))
+#                   iii = iii + 1
+#                tempo1 = (time.time() - start) # test (in sec)
+#                time.time()
+               qad_utils.setMapCanvasToolTip(snapTypeEnum2Descr(snapType))
+               #self.__mapCanvas.setToolTip(snapTypeEnum2Descr(snapType))
 
             # linee di estensione
             if snapType == QadSnapTypeEnum.EXT and (extLines is not None):
@@ -231,7 +234,7 @@ class QadSnapPointsDisplayManager():
                   # disegno l'arco di estensione
                   arcMarker = self.getArcMarker(arc)
                   if arcMarker is not None:
-                     self.__lineMarkers.append(arcMarker)                     
+                     self.__lineMarkers.append(arcMarker)
             
             # linee di parallelismo
             if snapType == QadSnapTypeEnum.PAR and (self.__startPoint is not None):
@@ -261,26 +264,26 @@ class QadSnapPointsDisplayManager():
                p2 = None
                
                if upperIntersX is not None:
-                  p1 = QgsPoint(upperIntersX, yMax)
+                  p1 = QgsPointXY(upperIntersX, yMax)
                   
                if leftIntersY is not None:
                   if leftIntersY != yMax:
                      if p1 is None:
-                        p1 = QgsPoint(xMin, leftIntersY)
+                        p1 = QgsPointXY(xMin, leftIntersY)
                      else:       
-                        p2 = QgsPoint(xMin, leftIntersY)   
+                        p2 = QgsPointXY(xMin, leftIntersY)
                                           
                if lowerIntersX is not None:
                   if lowerIntersX != xMin:
                      if p1 is None:
-                        p1 = QgsPoint(lowerIntersX, yMin)
+                        p1 = QgsPointXY(lowerIntersX, yMin)
                      elif p2 is None:                  
-                        p2 = QgsPoint(lowerIntersX, yMin)   
+                        p2 = QgsPointXY(lowerIntersX, yMin)
 
                if rightIntersY is not None:
                   if rightIntersY != yMin:
                      if p2 is None:
-                        p2 = QgsPoint(xMax, rightIntersY)
+                        p2 = QgsPointXY(xMax, rightIntersY)
 
                if (p1 is not None) and (p2 is not None):                    
                   # per un baco non ancora capito: se la linea ha solo 2 vertici e 
@@ -288,7 +291,7 @@ class QadSnapPointsDisplayManager():
                   # la linea non viene disegnata perciò sposto un pochino la x o la y         
                   p2 = qad_utils.getAdjustedRubberBandVertex(p1, p2)                                          
                   # disegno la linea parallela
-                  self.__lineMarkers.append(self.getLineMarker(p1, p2))                  
+                  self.__lineMarkers.append(self.getLineMarker(p1, p2))
 
       # linee per il puntamento polare
       if oSnapLinesForPolar is not None:
@@ -357,7 +360,7 @@ class QadSnapPointsDisplayManager():
       """
       Crea un marcatore lineare
       """
-      lineMarker = createRubberBand(self.__mapCanvas, QGis.Line, True)
+      lineMarker = createRubberBand(self.__mapCanvas, QgsWkbTypes.LineString, True)
       lineMarker.setColor(self.__color)
       lineMarker.setLineStyle(Qt.DashLine)
       lineMarker.addPoint(pt1, False)
@@ -413,7 +416,7 @@ class QadSnapPointsDisplayManager():
             y2 = yMin
                                                                              
       if (x2 is not None) and (y2 is not None):
-         p2 = QgsPoint(x2, y2)                     
+         p2 = QgsPointXY(x2, y2)
          # per un baco non ancora capito: se la linea ha solo 2 vertici e 
          # hanno la stessa x o y (linea orizzontale o verticale) 
          # la linea non viene disegnata perciò sposto un pochino la x o la y         
@@ -428,7 +431,7 @@ class QadSnapPointsDisplayManager():
       """
       Crea un marcatore lineare x arco
       """
-      lineMarker = createRubberBand(self.__mapCanvas, QGis.Line, True)
+      lineMarker = createRubberBand(self.__mapCanvas, QgsWkbTypes.LineString, True)
       lineMarker.setColor(self.__color)
       lineMarker.setLineStyle(Qt.DotLine)
       points = arc.asPolyline()

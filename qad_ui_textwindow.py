@@ -1,30 +1,24 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4 import QtCore, QtGui
+
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-from qad_msg import QadMsg
+from .qad_msg import QadMsg
 
 
 class Ui_QadTextWindow(object):
@@ -47,9 +41,9 @@ class Ui_QadCmdSuggestWindow(object):
         QadCmdSuggestWindow.setObjectName("QadCmdsListWindow")
         QadCmdSuggestWindow.setWindowModality(QtCore.Qt.NonModal)
         QadCmdSuggestWindow.setEnabled(True)
-        self.dockWidgetContents = QtGui.QWidget()
+        self.dockWidgetContents = QtWidgets.QWidget()
         self.dockWidgetContents.setObjectName("QadCmdsListWindowDockWidgetContents")
-        self.vboxlayout = QtGui.QVBoxLayout(self.dockWidgetContents)
+        self.vboxlayout = QtWidgets.QVBoxLayout(self.dockWidgetContents)
         self.vboxlayout.setObjectName("QadCmdsListWindowVBoxLayout")
         self.vboxlayout.setMargin(0)
         QadCmdSuggestWindow.setLayout(self.vboxlayout)        

@@ -1,45 +1,36 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando COPY per copiare oggetti
- 
-                              -------------------
-        begin                : 2013-10-02
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_copy_maptool import *
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_getpoint import *
-from qad_textwindow import *
-from qad_ssget_cmd import QadSSGetClass
-from qad_entity import *
-from qad_variables import *
-import qad_utils
-import qad_layer
-from qad_dim import *
+from .qad_copy_maptool import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_getpoint import *
+from .qad_textwindow import *
+from .qad_ssget_cmd import QadSSGetClass
+from .qad_entity import *
+from .qad_variables import *
+from . import qad_utils
+from . import qad_layer
+from .qad_dim import *
 
 
 # Classe che gestisce il comando COPY
@@ -56,7 +47,7 @@ class QadCOPYCommandClass(QadCommandClass):
       return "COPY"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runCOPYCommand)
+      action.triggered.connect(self.plugIn.runCOPYCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/copyEnt.png")
@@ -70,7 +61,7 @@ class QadCOPYCommandClass(QadCommandClass):
       self.SSGetClass = QadSSGetClass(plugIn)
       self.SSGetClass.onlyEditableLayers = True
       self.entitySet = QadEntitySet()
-      self.basePt = QgsPoint()
+      self.basePt = QgsPointXY()
       self.series = False
       self.seriesLen = 2
       self.adjust = False
@@ -98,7 +89,7 @@ class QadCOPYCommandClass(QadCommandClass):
 
    def getCurrentContextualMenu(self):
       if self.step == 0: # quando si é in fase di selezione entità
-         return self.SSGetClass.getCurrentContextualMenu()
+         return None # return self.SSGetClass.getCurrentContextualMenu()
       else:
          return self.contextualMenu
 
@@ -158,7 +149,7 @@ class QadCOPYCommandClass(QadCommandClass):
                deltaX = offSetX
                deltaY = offSetY
                               
-               for i in xrange(1, self.seriesLen, 1):
+               for i in range(1, self.seriesLen, 1):
                   if self.move(f, deltaX, deltaY, layerEntitySet, entitySet, dimEntity) == False:
                      self.plugIn.destroyEditCommand()
                      return
@@ -291,7 +282,7 @@ class QadCOPYCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
             
@@ -383,7 +374,7 @@ class QadCOPYCommandClass(QadCommandClass):
             elif value == QadMsg.translate("Command_COPY", "Multiple", "waitForBasePt") or value == "Multiple":
                self.copyMode = 0 # Imposta il comando COPIA in modo che venga ripetuto automaticamente
                self.waitForBasePt()                         
-         elif type(value) == QgsPoint: # se é stato inserito il punto base
+         elif type(value) == QgsPointXY: # se é stato inserito il punto base
             self.basePt.set(value.x(), value.y())
 
             # imposto il map tool
@@ -419,7 +410,7 @@ class QadCOPYCommandClass(QadCommandClass):
                value = QadMsg.translate("Command_COPY", "Exit")
             else:               
                # utilizzare il primo punto come spostamento
-               value = QgsPoint(self.basePt)
+               value = QgsPointXY(self.basePt)
                self.basePt.set(0, 0)
                self.copyGeoms(value)
                return True # fine comando
@@ -436,7 +427,7 @@ class QadCOPYCommandClass(QadCommandClass):
                else:
                   self.showMsg(QadMsg.translate("QAD", "\nThe command has been canceled."))                  
                self.waitForSecondPt()
-         elif type(value) == QgsPoint: # se é stato inserito lo spostamento con un punto
+         elif type(value) == QgsPointXY: # se é stato inserito lo spostamento con un punto
             self.copyGeoms(value)
             if self.copyMode == 1: # "Singola" 
                return True # fine comando
@@ -552,7 +543,7 @@ class QadCOPYCommandClass(QadCommandClass):
                self.adjust = True
                self.getPointMapTool().adjust = self.adjust
                self.waitForSecondPtBySeries()
-         elif type(value) == QgsPoint: # se é stato inserito lo spostamento con un punto
+         elif type(value) == QgsPointXY: # se é stato inserito lo spostamento con un punto
             self.copyGeoms(value)
             if self.copyMode == 1: # "Singola" 
                return True # fine comando            

@@ -1,42 +1,33 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire il map tool in ambito del comando mbuffer
- 
-                              -------------------
-        begin                : 2013-09-19
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import math
 
 
-from qad_msg import QadMsg
-import qad_utils
-from qad_snapper import *
-from qad_snappointsdisplaymanager import *
-from qad_variables import *
-from qad_getpoint import *
-from qad_rubberband import QadRubberBand
+from .qad_msg import QadMsg
+from . import qad_utils
+from .qad_snapper import *
+from .qad_snappointsdisplaymanager import *
+from .qad_variables import *
+from .qad_getpoint import *
+from .qad_rubberband import QadRubberBand
 
 
 #===============================================================================
@@ -61,7 +52,7 @@ class Qad_mbuffer_maptool(QadGetPoint):
       # nei files qad_arc.py e qad_circle.py
       self.segments = 12
       self.entitySet = QadEntitySet()
-      self.geomType = QGis.Polygon
+      self.geomType = QgsWkbTypes.Polygon
       self.__rubberBand = QadRubberBand(self.canvas, True)
 
    def setRubberBandColor(self, rubberBandBorderColor, rubberBandFillColor):

@@ -1,37 +1,32 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- classe base per un comando
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QMenu,QAction
 from qgis.core import *
 
 
-from qad_msg import QadMsg
-from qad_textwindow import *
-from qad_getpoint import *
+from .qad_msg import QadMsg
+from .qad_textwindow import *
+from .qad_getpoint import *
+from .qad_dynamicinput import QadDynamicInputContextEnum
+from .qad_dsettings_dlg import QadDSETTINGSDialog, QadDSETTINGSTabIndexEnum
 
 
 # Classe che gestisce un comando generico
@@ -102,48 +97,58 @@ class QadCommandClass(QObject): # derivato da QObject per gestire il metodo send
          self.plugIn.canvas.setMapTool(mapTool)
          self.plugIn.mainAction.setChecked(True)     
 
+
    def waitForPoint(self, msg = QadMsg.translate("QAD", "Specify point: "), \
                     default = None, inputMode = QadInputModeEnum.NONE):
       self.setMapTool(self.getPointMapTool())
       # setto l'input via finestra di testo
       self.showInputMsg(msg, QadInputTypeEnum.POINT2D, default, "", inputMode)
+      
 
    def waitForString(self, msg, default = None, inputMode = QadInputModeEnum.NONE):
       self.setMapTool(self.getPointMapTool())
       # setto l'input via finestra di testo
       self.showInputMsg(msg, QadInputTypeEnum.STRING, default, "", inputMode)
 
+
    def waitForInt(self, msg, default = None, inputMode = QadInputModeEnum.NOT_NULL):
       self.setMapTool(self.getPointMapTool())
       # setto l'input via finestra di testo
       self.showInputMsg(msg, QadInputTypeEnum.INT, default, "", inputMode)
+
 
    def waitForLong(self, msg, default = None, inputMode = QadInputModeEnum.NONE):
       self.setMapTool(self.getPointMapTool())
       # setto l'input via finestra di testo
       self.showInputMsg(msg, QadInputTypeEnum.LONG, default, "", inputMode)
 
+
    def waitForFloat(self, msg, default = None, inputMode = QadInputModeEnum.NONE):
       self.setMapTool(self.getPointMapTool())
       # setto l'input via finestra di testo
       self.showInputMsg(msg, QadInputTypeEnum.FLOAT, default, "", inputMode)
+
 
    def waitForBool(self, msg, default = None, inputMode = QadInputModeEnum.NONE):
       self.setMapTool(self.getPointMapTool())
       # setto l'input via finestra di testo
       self.showInputMsg(msg, QadInputTypeEnum.BOOL, default, "", inputMode)
 
+
    def waitForSelSet(self, msg = QadMsg.translate("QAD", "Select objects: ")):
       self.getPointMapTool().setDrawMode(QadGetPointDrawModeEnum.ELASTIC_RECTANGLE)
       self.setMapTool(self.getPointMapTool())
+      self.getPointMapTool().getDynamicInput().context = QadDynamicInputContextEnum.NONE
       # setto l'input via finestra di testo
       self.showInputMsg(msg, QadInputTypeEnum.POINT2D)
+
 
    def waitFor(self, msg, inputType, default = None, keyWords = "", \
                inputMode = QadInputModeEnum.NONE):
       self.setMapTool(self.getPointMapTool())
       # setto l'input via finestra di testo
       self.showInputMsg(msg, inputType, default, keyWords, inputMode)
+
 
    def getCurrMsgFromTxtWindow(self):
       if self.plugIn is not None:
@@ -160,7 +165,7 @@ class QadCommandClass(QObject): # derivato da QObject per gestire il metodo send
       
    def getToolTipText(self):
       text = self.getName()
-      if self.getNote() > 0:
+      if len(self.getNote()) > 0:
          text = text + "\n\n" + self.getNote()
       return text
       
@@ -177,7 +182,7 @@ class QadCommandClass(QObject): # derivato da QObject per gestire il metodo send
 
    def connectQAction(self, action):
       pass     
-      #QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runPLINECommand)
+      #action.triggered.connect(self.plugIn.runPLINECommand)
 
    def getIcon(self):
       # impostare l'icona  del comando (es. QIcon(":/plugins/qad/icons/pline.png"))
@@ -257,19 +262,19 @@ class QadCommandClass(QObject): # derivato da QObject per gestire il metodo send
       # transform point o geometry coordinates from output CRS to layer's CRS 
       if self.plugIn is None:
          return None
-      if type(point_geom) == QgsPoint:
+      if type(point_geom) == QgsPointXY:
          return self.plugIn.canvas.mapSettings().mapToLayerCoordinates(layer, point_geom)
       elif type(point_geom) == QgsGeometry:
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
-         coordTransform = QgsCoordinateTransform(self.plugIn.canvas.mapSettings().destinationCrs(), layer.crs())
+         coordTransform = QgsCoordinateTransform(self.plugIn.canvas.mapSettings().destinationCrs(), layer.crs(),QgsProject.instance())
          g = QgsGeometry(point_geom)
          g.transform(coordTransform)
          return g
       elif (type(point_geom) == list or type(point_geom) == tuple): # lista di punti o di geometrie
-         coordTransform = QgsCoordinateTransform(self.plugIn.canvas.mapSettings().destinationCrs(), layer.crs())
+         coordTransform = QgsCoordinateTransform(self.plugIn.canvas.mapSettings().destinationCrs(), layer.crs(),QgsProject.instance())
          res = []
          for pt in point_geom:
-            if type(pt) == QgsPoint:
+            if type(pt) == QgsPointXY:
                res.append(coordTransform.transform(pt))
             elif type(point_geom) == QgsGeometry:
                g = QgsGeometry(point_geom)
@@ -283,19 +288,19 @@ class QadCommandClass(QObject): # derivato da QObject per gestire il metodo send
       # transform point o geometry coordinates from layer's CRS to output CRS 
       if self.plugIn is None:
          return None
-      if type(point_geom) == QgsPoint:
+      if type(point_geom) == QgsPointXY:
          return self.plugIn.canvas.mapSettings().layerToMapCoordinates(layer, point_geom)
       elif type(point_geom) == QgsGeometry:
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
-         coordTransform = QgsCoordinateTransform(layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs())
+         coordTransform = QgsCoordinateTransform(layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs(),QgsProject.instance())
          g = QgsGeometry(point_geom)
          g.transform(coordTransform)
          return g
       elif (type(point_geom) == list or type(point_geom) == tuple): # lista di punti o di geometrie
-         coordTransform = QgsCoordinateTransform(self.plugIn.canvas.mapSettings().destinationCrs(), layer.crs())
+         coordTransform = QgsCoordinateTransform(self.plugIn.canvas.mapSettings().destinationCrs(), layer.crs(),QgsProject.instance())
          res = []
          for pt in point_geom:
-            if type(pt) == QgsPoint:
+            if type(pt) == QgsPointXY:
                res.append(coordTransform.transform(pt))
             elif type(point_geom) == QgsGeometry:
                g = QgsGeometry(point_geom)
@@ -357,7 +362,7 @@ class QadContextualMenuClass(QMenu):
          cmdInputHistoryMax = QadVariables.get(QadMsg.translate("Environment variables", "CMDINPUTHISTORYMAX"))
          # ciclo sulla storia degli ultimi punti usati
          while i >= 0 and (ptsHistoryLen - i) <= cmdInputHistoryMax:
-            strPt = qad_utils.QgsPointToString(ptsHistory[i])
+            strPt = qad_utils.pointToStringFmt(ptsHistory[i])
             i = i - 1
             action = QAction(strPt, recentPtsMenu)
             recentPtsMenu.addAction(action)
@@ -380,7 +385,7 @@ class QadContextualMenuClass(QMenu):
       for connection in self.connections:
          action = connection[0]
          slot = connection[1]
-         QObject.connect(action, SIGNAL("triggered()"), slot)
+         action.triggered.connect(slot)
 
 
    def enterActionByContextualMenu(self):
@@ -565,7 +570,7 @@ class QadOsnapContextualMenuClass(QMenu):
       self.addSeparator()
 
       msg = QadMsg.translate("DSettings_Dialog", "Object snap settings...")
-      icon = QIcon(":/plugins/qad/icons/dsettings.png")
+      icon = QIcon(":/plugins/qad/icons/dsettings.svg")
       if icon is None:
          DSettingsAction = QAction(msg, self)
       else:
@@ -577,19 +582,23 @@ class QadOsnapContextualMenuClass(QMenu):
       for connection in self.connections:
          action = connection[0]
          slot = connection[1]
-         QObject.connect(action, SIGNAL("triggered()"), slot)
+         action.triggered.connect(slot)
 
 
    #============================================================================
    # addSnapTypeByPopupMenu
    #============================================================================
    def addSnapTypeByPopupMenu(self, _snapType):
-      value = QadVariables.get(QadMsg.translate("Environment variables", "OSMODE"))
-      if value & QadSnapTypeEnum.DISABLE:
-         value =  value - QadSnapTypeEnum.DISABLE      
-      QadVariables.set(QadMsg.translate("Environment variables", "OSMODE"), value | _snapType)
-      QadVariables.save()
-      self.plugIn.refreshCommandMapToolSnapType()
+      # la funzione deve impostare lo snap ad oggetto solo temporaneamente
+      str = snapTypeEnum2Str(_snapType)
+      self.plugIn.showEvaluateMsg(str)
+      return
+#       value = QadVariables.get(QadMsg.translate("Environment variables", "OSMODE"))
+#       if value & QadSnapTypeEnum.DISABLE:
+#          value =  value - QadSnapTypeEnum.DISABLE      
+#       QadVariables.set(QadMsg.translate("Environment variables", "OSMODE"), value | _snapType)
+#       QadVariables.save()
+#       self.plugIn.refreshCommandMapToolSnapType()
          
    def addEndLineSnapTypeByPopupMenu(self):
       self.addSnapTypeByPopupMenu(QadSnapTypeEnum.END_PLINE)
@@ -631,3 +640,4 @@ class QadOsnapContextualMenuClass(QMenu):
       d.exec_()
       self.plugIn.refreshCommandMapToolSnapType()
       self.plugIn.refreshCommandMapToolAutoSnap()
+      self.plugIn.refreshCommandMapToolDynamicInput()

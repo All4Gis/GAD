@@ -1,43 +1,34 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per la gestione delle entità
- 
-                              -------------------
-        begin                : 2013-08-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 from qgis.utils import iface
 import sys
 
 
-import qad_utils
-from qad_arc import *
-from qad_circle import *
-import qad_layer
-import qad_stretch_fun
-import qad_label
+from . import qad_utils
+from .qad_arc import *
+from .qad_circle import *
+from . import qad_layer
+from . import qad_stretch_fun
+from . import qad_label
 
 
 #===============================================================================
@@ -85,17 +76,17 @@ class QadEntity():
    def __fromPoyline(self, pointList): # funzione privata
       # restituisce entityType, qadGeom
       arc = QadArc()
-      startEndVertices = arc.fromPolyline(pointList, 0)
+      startEndVertices = arc.fromPolylineXY(pointList, 0)
       # se la polilinea è composta solo da un arco
       if startEndVertices and startEndVertices[0] == 0 and startEndVertices[1] == len(pointList)-1:
          return QadEntityGeomTypeEnum.ARC, arc # oggetto arco
       else:
          circle = QadCircle()
-         if circle.fromPolyline(pointList): # se la polilinea è un cerchio
+         if circle.fromPolylineXY(pointList): # se la polilinea è un cerchio
             return QadEntityGeomTypeEnum.CIRCLE, circle # oggetto cerchio
          else:
             linearObjectList = qad_utils.QadLinearObjectList() # oggetto QadLinearObjectList
-            linearObjectList.fromPolyline(pointList)
+            linearObjectList.fromPolylineXY(pointList)
             return QadEntityGeomTypeEnum.LINESTRING, linearObjectList
       
       return QadEntityGeomTypeEnum.NONE, None
@@ -114,12 +105,12 @@ class QadEntity():
          return QadEntityGeomTypeEnum.NONE
 
       # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
-      coordTransform = QgsCoordinateTransform(self.layer.crs(), iface.mapCanvas().mapSettings().destinationCrs())
+      coordTransform = QgsCoordinateTransform(self.layer.crs(), iface.mapCanvas().mapSettings().destinationCrs(),QgsProject.instance())
       g.transform(coordTransform)
 
       wkbType = g.wkbType()
-      if wkbType == QGis.WKBPoint:
-         from qad_dim import QadDimStyles # to avoid cyclic import
+      if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
+         from .qad_dim import QadDimStyles # to avoid cyclic import
 
          # verifico se l'entità appartiene ad uno stile di quotatura
          dimStyle, dimId = QadDimStyles.getDimIdByEntity(self)
@@ -133,15 +124,15 @@ class QadEntity():
             self.entityType = QadEntityGeomTypeEnum.SYMBOL
          self.qadGeom = g.asPoint() # un punto
 
-      if wkbType == QGis.WKBMultiPoint:
+      if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
          if qad_layer.isTextLayer(self.layer):
             self.entityType = QadEntityGeomTypeEnum.TEXT
          elif qad_layer.isSymbolLayer(self.layer):
             self.entityType = QadEntityGeomTypeEnum.SYMBOL
          self.qadGeom = g.asMultiPoint() # lista di punti
 
-      elif wkbType == QGis.WKBLineString:
-         from qad_dim import QadDimStyles # to avoid cyclic import
+      elif wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
+         from .qad_dim import QadDimStyles # to avoid cyclic import
 
          # verifico se l'entità appartiene ad uno stile di quotatura
          dimStyle, dimId = QadDimStyles.getDimIdByEntity(self)
@@ -152,16 +143,16 @@ class QadEntity():
 
          self.entityType, self.qadGeom = self.__fromPoyline(g.asPolyline())
 
-      elif wkbType == QGis.WKBMultiLineString:         
+      elif wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
          self.entityType = []
          self.qadGeom = []
          lineList = g.asMultiPolyline() # vettore di linee
          for line in lineList:
-            entityType, qadGeom = self.__fromPoyline(g.asPolyline())
+            entityType, qadGeom = self.__fromPoyline(line)
             self.entityType.append(entityType)
             self.qadGeom.append(qadGeom)
 
-      elif wkbType == QGis.WKBPolygon:
+      elif wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
          self.entityType = []
          self.qadGeom = []
          polygon = g.asPolygon() # vettore di linee
@@ -170,7 +161,7 @@ class QadEntity():
             self.entityType.append(entityType)
             self.qadGeom.append(qadGeom)
 
-      elif wkbType == QGis.WKBMultiPolygon:
+      elif wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
          self.entityType = []
          self.qadGeom = []
          polygonList = g.asMultiPolygon() # vettore di poligoni
@@ -324,7 +315,7 @@ class QadEntity():
             res.append(self.__getPtsFromQadGeom(subGeom, tolerance2ApproxCurve))
          return res
       else:
-         if type(qadGeom) == QgsPoint:
+         if type(qadGeom) == QgsPointXY:
             return qadGeom
          else:
             return qadGeom.asPolyline(tolerance2ApproxCurve)
@@ -334,24 +325,24 @@ class QadEntity():
       Pts = self.__getPtsFromQadGeom(qadGeom, tolerance2ApproxCurve)
       if Pts is None:
          return None
-      if self.layer.geometryType() == QGis.Point:
+      if self.layer.geometryType() == QgsWkbTypes.PointGeometry:
          if type(Pts) == list:
-            g = QgsGeometry.fromMultiPoint(Pts)
+            g = QgsGeometry.fromMultiPointXY(Pts)
          else:
-            g = QgsGeometry.fromPoint(Pts)
-      if self.layer.geometryType() == QGis.Line:
+            g = QgsGeometry.fromPointXY(Pts)
+      if self.layer.geometryType() == QgsWkbTypes.LineGeometry:
          if type(Pts[0]) == list:
-            g = QgsGeometry.fromMultiPolyline(Pts)
+            g = QgsGeometry.fromMultiPolylineXY(Pts)
          else:
-            g = QgsGeometry.fromPolyline(Pts)
-      if self.layer.geometryType() == QGis.Polygon:
+            g = QgsGeometry.fromPolylineXY(Pts)
+      if self.layer.geometryType() == QgsWkbTypes.PolygonGeometry:
          if type(Pts[0][0]) == list:
-            g = QgsGeometry.fromMultiPolygon(Pts)
+            g = QgsGeometry.fromMultiPolygonXY(Pts)
          else:
-            g = QgsGeometry.fromPolygon(Pts)
+            g = QgsGeometry.fromPolygonXY(Pts)
 
       # trasformo la geometria nel crs del layer
-      coordTransform = QgsCoordinateTransform(iface.mapCanvas().mapSettings().destinationCrs(), self.layer.crs())
+      coordTransform = QgsCoordinateTransform(iface.mapCanvas().mapSettings().destinationCrs(), self.layer.crs(),QgsProject.instance())
       g.transform(coordTransform)
       return g
       
@@ -426,10 +417,10 @@ class QadEntity():
 
       f = self.getFeature()
       g = g.geometry()
-      g.transform(QgsCoordinateTransform(self.crs(), destinationCrs))
+      g.transform(QgsCoordinateTransform(self.crs(), destinationCrs,QgsProject.instance()))
       # ruoto la feature
       g = qad_utils.rotateQgsGeometry(g, basePt, angle)
-      g.transform(QgsCoordinateTransform(destinationCrs, self.crs()))
+      g.transform(QgsCoordinateTransform(destinationCrs, self.crs(),QgsProject.instance()))
       f.setGeometry(g)
       
       rotFldName = ""
@@ -543,7 +534,7 @@ class QadLayerEntitySet():
    def initByCurrentQgsSelectedFeatures(self, layer):
       self.clear()
       self.layer = layer
-      self.featureIds = self.layer.selectedFeaturesIds()
+      self.featureIds = self.layer.selectedFeatureIds()
 
 
    def getFeature(self, featureId):
@@ -568,7 +559,7 @@ class QadLayerEntitySet():
    def getGeometryCollection(self, destCRS = None):
       result = []
       if destCRS is not None:
-         coordTransform = QgsCoordinateTransform(self.layer.crs(), destCRS) # trasformo la geometria
+         coordTransform = QgsCoordinateTransform(self.layer.crs(), destCRS,QgsProject.instance()) # trasformo la geometria
       for featureId in self.featureIds:
          g = self.getGeometry(featureId)
          if g is not None:
@@ -579,18 +570,18 @@ class QadLayerEntitySet():
                # il calcolo dà un risultato sbagliato quando la geometria é nuova o modificata
                # (in cache del layer) e il sistema di coordinate é diverso de quello della mappa corrente 
                wkbType = g.wkbType()
-               if wkbType == QGis.WKBPoint or wkbType == QGis.WKBPoint25D:               
+               if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
                   g = QgsGeometry().fromPoint(g.asPoint())
-               elif wkbType == QGis.WKBMultiPoint or wkbType == QGis.WKBMultiPoint25D:
-                  g = QgsGeometry().fromMultiPoint(g.asMultiPoint())
-               elif wkbType == QGis.WKBLineString or wkbType == QGis.WKBLineString25D:
-                  g = QgsGeometry().fromPolyline(g.asPolyline())
-               elif wkbType == QGis.WKBMultiLineString or wkbType == QGis.WKBMultiLineString25D:
-                  g = QgsGeometry().fromMultiPolyline(g.asMultiPolyline())
-               elif wkbType == QGis.WKBPolygon or wkbType == QGis.WKBPolygon25D:
-                  g = QgsGeometry().fromPolygon(g.asPolygon())
-               elif wkbType == QGis.WKBMultiPolygon or wkbType == QGis.WKBMultiPolygon25D:
-                  g = QgsGeometry().fromMultiPolygon(g.asMultiPolygon())
+               elif wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
+                  g = QgsGeometry().fromMultiPointXY(g.asMultiPoint())
+               elif wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
+                  g = QgsGeometry().fromPolylineXY(g.asPolyline())
+               elif wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
+                  g = QgsGeometry().fromMultiPolylineXY(g.asMultiPolyline())
+               elif wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
+                  g = QgsGeometry().fromPolygonXY(g.asPolygon())
+               elif wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
+                  g = QgsGeometry().fromMultiPolygonXY(g.asMultiPolygon())
                     
             result.append(g)
       return result
@@ -894,7 +885,8 @@ class QadEntitySet():
       
 
    def addEntity(self, entity):
-      if entity is None or entity.isInitialized() == False:
+      #if entity is None or entity.isInitialized() == False:
+      if entity is None:
          return False
       layerEntitySet = self.findLayerEntitySet(entity.layer)
       if layerEntitySet is None: 
@@ -945,7 +937,7 @@ class QadEntitySet():
    def intersect(self, entitySet):
       if entitySet is None:
          return
-      for i in xrange(len(self.layerEntitySetList) - 1, -1, -1):
+      for i in range(len(self.layerEntitySetList) - 1, -1, -1):
          _layerEntitySet = self.layerEntitySetList[i]
          layerEntitySet = entitySet.findLayerEntitySet(_layerEntitySet)
          if layerEntitySet is None:
@@ -969,14 +961,14 @@ class QadEntitySet():
 
 
    def removeNotEditable(self):
-      for i in xrange(len(self.layerEntitySetList) - 1, -1, -1):
+      for i in range(len(self.layerEntitySetList) - 1, -1, -1):
          layerEntitySet = self.layerEntitySetList[i]
          if layerEntitySet.layer.isEditable() == False:
             del self.layerEntitySetList[i]
                   
 
    def removeGeomType(self, type):
-      for i in xrange(len(self.layerEntitySetList) - 1, -1, -1):
+      for i in range(len(self.layerEntitySetList) - 1, -1, -1):
          layerEntitySet = self.layerEntitySetList[i]
          if layerEntitySet.layer.geometryType() == type:
             del self.layerEntitySetList[i]
@@ -984,7 +976,7 @@ class QadEntitySet():
 
    def purge(self):
       # rimuove i layer con zero oggetti
-      for i in xrange(len(self.layerEntitySetList) - 1, -1, -1):
+      for i in range(len(self.layerEntitySetList) - 1, -1, -1):
          layerEntitySet = self.layerEntitySetList[i]
          if layerEntitySet.count() == 0:
             del self.layerEntitySetList[i]
@@ -996,7 +988,7 @@ class QadEntitySet():
       for layerEntitySet in self.layerEntitySetList:
          partial = layerEntitySet.boundingBox()
          if partial is not None:
-            coordTransform = QgsCoordinateTransform(layerEntitySet.crs(), destCRS) # trasformo la geometria
+            coordTransform = QgsCoordinateTransform(layerEntitySet.crs(), destCRS,QgsProject.instance()) # trasformo la geometria
             if result is None:
                result = QgsRectangle(coordTransform.transform(partial.xMinimum(), partial.yMinimum()), \
                                      coordTransform.transform(partial.xMaximum(), partial.yMaximum()))

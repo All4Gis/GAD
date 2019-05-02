@@ -2,12 +2,12 @@
 
 # Form implementation generated from reading ui file 'qad_dimstyle.ui'
 #
-# Created: Wed Oct 12 11:24:05 2016
+# Created: Mon May 14 11:26:28 2018
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -27,9 +27,9 @@ class Ui_DimStyle_Dialog(object):
     def setupUi(self, DimStyle_Dialog):
         DimStyle_Dialog.setObjectName(_fromUtf8("DimStyle_Dialog"))
         DimStyle_Dialog.setWindowModality(QtCore.Qt.WindowModal)
-        DimStyle_Dialog.resize(533, 341)
-        DimStyle_Dialog.setMinimumSize(QtCore.QSize(533, 341))
-        DimStyle_Dialog.setMaximumSize(QtCore.QSize(533, 341))
+        DimStyle_Dialog.resize(539, 341)
+        DimStyle_Dialog.setMinimumSize(QtCore.QSize(539, 341))
+        DimStyle_Dialog.setMaximumSize(QtCore.QSize(539, 341))
         self.label = QtGui.QLabel(DimStyle_Dialog)
         self.label.setGeometry(QtCore.QRect(20, 10, 151, 16))
         self.label.setObjectName(_fromUtf8("label"))
@@ -43,22 +43,22 @@ class Ui_DimStyle_Dialog(object):
         self.dimStyleList.setGeometry(QtCore.QRect(10, 60, 171, 171))
         self.dimStyleList.setObjectName(_fromUtf8("dimStyleList"))
         self.SetCurrent = QtGui.QPushButton(DimStyle_Dialog)
-        self.SetCurrent.setGeometry(QtCore.QRect(410, 60, 111, 23))
+        self.SetCurrent.setGeometry(QtCore.QRect(410, 60, 121, 23))
         self.SetCurrent.setObjectName(_fromUtf8("SetCurrent"))
         self.new_2 = QtGui.QPushButton(DimStyle_Dialog)
-        self.new_2.setGeometry(QtCore.QRect(410, 90, 111, 23))
+        self.new_2.setGeometry(QtCore.QRect(410, 90, 121, 23))
         self.new_2.setObjectName(_fromUtf8("new_2"))
         self.Mod = QtGui.QPushButton(DimStyle_Dialog)
-        self.Mod.setGeometry(QtCore.QRect(410, 120, 111, 23))
+        self.Mod.setGeometry(QtCore.QRect(410, 120, 121, 23))
         self.Mod.setObjectName(_fromUtf8("Mod"))
         self.TempMod = QtGui.QPushButton(DimStyle_Dialog)
-        self.TempMod.setGeometry(QtCore.QRect(410, 150, 111, 23))
+        self.TempMod.setGeometry(QtCore.QRect(410, 150, 121, 23))
         self.TempMod.setObjectName(_fromUtf8("TempMod"))
         self.Diff = QtGui.QPushButton(DimStyle_Dialog)
-        self.Diff.setGeometry(QtCore.QRect(410, 180, 111, 23))
+        self.Diff.setGeometry(QtCore.QRect(410, 180, 121, 23))
         self.Diff.setObjectName(_fromUtf8("Diff"))
         self.groupBox = QtGui.QGroupBox(DimStyle_Dialog)
-        self.groupBox.setGeometry(QtCore.QRect(10, 240, 511, 61))
+        self.groupBox.setGeometry(QtCore.QRect(10, 240, 521, 61))
         self.groupBox.setObjectName(_fromUtf8("groupBox"))
         self.descriptionSelectedStyle = QtGui.QLabel(self.groupBox)
         self.descriptionSelectedStyle.setGeometry(QtCore.QRect(10, 10, 481, 41))
@@ -70,7 +70,7 @@ class Ui_DimStyle_Dialog(object):
         self.selectedStyle.setGeometry(QtCore.QRect(300, 40, 221, 20))
         self.selectedStyle.setObjectName(_fromUtf8("selectedStyle"))
         self.layoutWidget = QtGui.QWidget(DimStyle_Dialog)
-        self.layoutWidget.setGeometry(QtCore.QRect(360, 310, 158, 25))
+        self.layoutWidget.setGeometry(QtCore.QRect(370, 310, 158, 25))
         self.layoutWidget.setObjectName(_fromUtf8("layoutWidget"))
         self.horizontalLayout = QtGui.QHBoxLayout(self.layoutWidget)
         self.horizontalLayout.setMargin(0)

@@ -1,44 +1,35 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando MBUFFER per creare oggetti originati da buffer su altri oggetti
- 
-                              -------------------
-        begin                : 2013-09-19
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_mbuffer_maptool import *
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_getpoint import *
-from qad_textwindow import *
-from qad_ssget_cmd import QadSSGetClass
-from qad_entity import *
-import qad_utils
-import qad_layer
-from qad_dim import QadDimStyles
+from .qad_mbuffer_maptool import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_getpoint import *
+from .qad_textwindow import *
+from .qad_ssget_cmd import QadSSGetClass
+from .qad_entity import *
+from . import qad_utils
+from . import qad_layer
+from .qad_dim import QadDimStyles
 
 
 # Classe che gestisce il comando MBUFFER
@@ -55,10 +46,10 @@ class QadMBUFFERCommandClass(QadCommandClass):
       return "MBUFFER"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runMBUFFERCommand)
+      action.triggered.connect(self.plugIn.runMBUFFERCommand)
 
    def getIcon(self):
-      return QIcon(":/plugins/qad/icons/mbuffer.png")
+      return QIcon(":/plugins/qad/icons/mbuffer.svg")
 
    def getNote(self):
       # impostare le note esplicative del comando
@@ -78,7 +69,7 @@ class QadMBUFFERCommandClass(QadCommandClass):
 
    def __del__(self):
       QadCommandClass.__del__(self)
-      del SSGetClass
+      del self.SSGetClass
 
 
    def getPointMapTool(self, drawMode = QadGetPointDrawModeEnum.NONE):
@@ -96,7 +87,7 @@ class QadMBUFFERCommandClass(QadCommandClass):
 
    def getCurrentContextualMenu(self):
       if self.step == 0: # quando si é in fase di selezione entità
-         return self.SSGetClass.getCurrentContextualMenu()
+         return None # return self.SSGetClass.getCurrentContextualMenu()
       else:
          return self.contextualMenu
 
@@ -131,13 +122,13 @@ class QadMBUFFERCommandClass(QadCommandClass):
       pointGeoms, lineGeoms, polygonGeoms = qad_utils.filterGeomsByType(bufferGeoms, \
                                                                         currLayer.geometryType())
       # aggiungo le geometrie del tipo corretto
-      if currLayer.geometryType() == QGis.Line:
+      if currLayer.geometryType() == QgsWkbTypes.LineGeometry:
          polygonToLines = []
          # Riduco le geometrie in linee
          for g in polygonGeoms:
             lines = qad_utils.asPointOrPolyline(g)
             for l in lines:
-               if l.type() == QGis.Line:
+               if l.type() == QgsWkbTypes.LineGeometry:
                    polygonToLines.append(l)
          # plugIn, layer, geoms, coordTransform , refresh, check_validity
          if qad_layer.addGeomsToLayer(self.plugIn, currLayer, polygonToLines, None, False, False) == False:
@@ -152,15 +143,15 @@ class QadMBUFFERCommandClass(QadCommandClass):
          return
 
       if pointGeoms is not None and len(pointGeoms) > 0:
-         PointTempLayer = qad_layer.createQADTempLayer(self.plugIn, QGis.Point)
+         PointTempLayer = qad_layer.createQADTempLayer(self.plugIn, QgsWkbTypes.Point)
          self.plugIn.addLayerToLastEditCommand("Feature buffered", PointTempLayer)
       
       if lineGeoms is not None and len(lineGeoms) > 0:
-         LineTempLayer = qad_layer.createQADTempLayer(self.plugIn, QGis.Line)
+         LineTempLayer = qad_layer.createQADTempLayer(self.plugIn, QgsWkbTypes.LineGeometry)
          self.plugIn.addLayerToLastEditCommand("Feature buffered", LineTempLayer)
          
       if polygonGeoms is not None and len(polygonGeoms) > 0:
-         PolygonTempLayer = qad_layer.createQADTempLayer(self.plugIn, QGis.Polygon)
+         PolygonTempLayer = qad_layer.createQADTempLayer(self.plugIn, QgsWkbTypes.Polygon)
          self.plugIn.addLayerToLastEditCommand("Feature buffered", PolygonTempLayer)
 
       # aggiungo gli scarti nei layer temporanei di QAD
@@ -175,14 +166,14 @@ class QadMBUFFERCommandClass(QadCommandClass):
 
 
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
 
       currLayer = None
       if self.virtualCmd == False: # se si vuole veramente salvare la polylinea in un layer   
          # il layer corrente deve essere editabile e di tipo linea o poligono
-         currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, [QGis.Line, QGis.Polygon])
+         currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, [QgsWkbTypes.LineGeometry, QgsWkbTypes.Polygon])
          if currLayer is None:
             self.showErr(errMsg)
             return True # fine comando
@@ -191,7 +182,7 @@ class QadMBUFFERCommandClass(QadCommandClass):
          dimStyleList = QadDimStyles.getDimListByLayer(currLayer)
          if len(dimStyleList) > 0:
             dimStyleNames = ""
-            for i in xrange(0, len(dimStyleList), 1):
+            for i in range(0, len(dimStyleList), 1):
                if i > 0:
                   dimStyleNames += ", "
                dimStyleNames += dimStyleList[i].name
@@ -219,7 +210,7 @@ class QadMBUFFERCommandClass(QadCommandClass):
          # imposto il map tool
          self.getPointMapTool().setMode(Qad_mbuffer_maptool_ModeEnum.NONE_KNOWN_ASK_FOR_FIRST_PT)
          if currLayer is not None:
-            self.getPointMapTool().geomType = QGis.Line if currLayer.geometryType() == QGis.Line else QGis.Polygon                          
+            self.getPointMapTool().geomType = QgsWkbTypes.LineGeometry if currLayer.geometryType() == QgsWkbTypes.LineGeometry else QgsWkbTypes.PolygonGeometry
         
          # si appresta ad attendere un punto o un numero reale         
          # msg, inputType, default, keyWords, valori positivi
@@ -251,7 +242,7 @@ class QadMBUFFERCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint:
+         if type(value) == QgsPointXY:
             self.startPtForBufferWidth = value
             
             # imposto il map tool

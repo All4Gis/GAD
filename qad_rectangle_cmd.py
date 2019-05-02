@@ -1,42 +1,34 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- comando RECTANGLE per disegnare un rettangolo
- 
-                              -------------------
-        begin                : 2013-12-02
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
-***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_rectangle_maptool import *
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_textwindow import *
-import qad_utils
-import qad_layer
-from qad_getdist_cmd import QadGetDistClass
-from qad_getangle_cmd import QadGetAngleClass
+from .qad_rectangle_maptool import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_textwindow import *
+from . import qad_utils
+from . import qad_layer
+from .qad_getdist_cmd import QadGetDistClass
+from .qad_getangle_cmd import QadGetAngleClass
 
 
 # Classe che gestisce il comando RECTANGLE
@@ -53,10 +45,10 @@ class QadRECTANGLECommandClass(QadCommandClass):
       return "RECTANGLE"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runRECTANGLECommand)
+      action.triggered.connect(self.plugIn.runRECTANGLECommand)
 
    def getIcon(self):
-      return QIcon(":/plugins/qad/icons/rectangle.png")
+      return QIcon(":/plugins/qad/icons/rectangle.svg")
 
    def getNote(self):
       # impostare le note esplicative del comando
@@ -118,9 +110,9 @@ class QadRECTANGLECommandClass(QadCommandClass):
 
       
    def addRectangleToLayer(self, layer):
-      if layer.geometryType() == QGis.Line:
+      if layer.geometryType() == QgsWkbTypes.LineGeometry:
          qad_layer.addLineToLayer(self.plugIn, layer, self.vertices)
-      elif layer.geometryType() == QGis.Polygon:                          
+      elif layer.geometryType() == QgsWkbTypes.PolygonGeometry:
          qad_layer.addPolygonToLayer(self.plugIn, layer, self.vertices)
       
          
@@ -173,14 +165,14 @@ class QadRECTANGLECommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
 
       currLayer = None
       if self.virtualCmd == False: # se si vuole veramente salvare la polylinea in un layer   
          # il layer corrente deve essere editabile e di tipo linea o poligono
-         currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, [QGis.Line, QGis.Polygon])
+         currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, [QgsWkbTypes.LineString, QgsWkbTypes.Polygon])
          if currLayer is None:
             self.showErr(errMsg)
             return True # fine comando
@@ -233,7 +225,7 @@ class QadRECTANGLECommandClass(QadCommandClass):
                self.GetDistClass.inputMode = QadInputModeEnum.NOT_NEGATIVE
                self.step = 3
                self.GetDistClass.run(msgMapTool, msg)     
-         elif type(value) == QgsPoint:
+         elif type(value) == QgsPointXY:
             self.firstCorner = value
             self.getPointMapTool().firstCorner = self.firstCorner
             self.WaitForSecondCorner(currLayer)         
@@ -297,7 +289,7 @@ class QadRECTANGLECommandClass(QadCommandClass):
                self.getPointMapTool().setMode(Qad_rectangle_maptool_ModeEnum.NONE_KNOWN_ASK_FOR_FIRST_CORNER)
                
                self.step = 12
-         elif type(value) == QgsPoint:
+         elif type(value) == QgsPointXY:
             self.vertices.extend(qad_utils.getRectByCorners(self.firstCorner, value, self.rot, \
                                                             self.gapType, self.gapValue1, self.gapValue2))
 
@@ -452,11 +444,11 @@ class QadRECTANGLECommandClass(QadCommandClass):
       elif self.step == 8:
          if self.GetDistClass.run(msgMapTool, msg) == True:
             if self.GetDistClass.dist is not None:
-					self.vertices.extend(qad_utils.getRectByAreaAndLength(self.firstCorner, self.area, self.GetDistClass.dist, \
-																							self.rot, self.gapType, self.gapValue1, self.gapValue2))	
-					if self.virtualCmd == False: # se si vuole veramente salvare i buffer in un layer
-						self.addRectangleToLayer(currLayer)
-					return True # fine comando		
+              self.vertices.extend(qad_utils.getRectByAreaAndLength(self.firstCorner, self.area, self.GetDistClass.dist, \
+                                                                                      self.rot, self.gapType, self.gapValue1, self.gapValue2))
+              if self.virtualCmd == False: # se si vuole veramente salvare i buffer in un layer
+                  self.addRectangleToLayer(currLayer)
+              return True # fine comando
          return False
             
       #=========================================================================
@@ -464,11 +456,11 @@ class QadRECTANGLECommandClass(QadCommandClass):
       elif self.step == 9:
          if self.GetDistClass.run(msgMapTool, msg) == True:
             if self.GetDistClass.dist is not None:
-					self.vertices.extend(qad_utils.getRectByAreaAndWidth(self.firstCorner, self.area, self.GetDistClass.dist, \
-																							self.rot, self.gapType, self.gapValue1, self.gapValue2))	
-					if self.virtualCmd == False: # se si vuole veramente salvare i buffer in un layer
-						self.addRectangleToLayer(currLayer)
-					return True # fine comando		
+              self.vertices.extend(qad_utils.getRectByAreaAndWidth(self.firstCorner, self.area, self.GetDistClass.dist, \
+                                                                                      self.rot, self.gapType, self.gapValue1, self.gapValue2))
+              if self.virtualCmd == False: # se si vuole veramente salvare i buffer in un layer
+                  self.addRectangleToLayer(currLayer)
+              return True # fine comando
          return False
             
       #=========================================================================
@@ -530,7 +522,7 @@ class QadRECTANGLECommandClass(QadCommandClass):
                self.GetAngleClass.angle = self.rot
                self.step = 13
                self.GetAngleClass.run(msgMapTool, msg)               
-         elif type(value) == QgsPoint:
+         elif type(value) == QgsPointXY:
             self.rot = qad_utils.getAngleBy2Pts(self.firstCorner, value)
             self.WaitForSecondCorner(currLayer)
          elif type(value) == float:

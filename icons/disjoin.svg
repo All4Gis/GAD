@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    GAD - Geographic Aided Design
+
+     begin      : May 05, 2019
+     copyright  : (c) 2019 by German Perez-Casanova Gomez
+     email      : icearqu@gmail.com
+
+
+    GAD  This program is free software and is distributed in
+    the hope that it will be useful, but without any warranty,
+    you can redistribute it and/or modify it under the terms
+    of version 3 of the GNU General Public License (GPL v3) as
+    published by the Free Software Foundation (www.gnu.org)
+-->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 297.3 297.3" style="enable-background:new 0 0 297.3 297.3;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#00A8D9;stroke:#323232;stroke-width:20;stroke-miterlimit:10;}
+	.st1{fill:#00A8D9;stroke:#323232;stroke-width:2;stroke-miterlimit:10;}
+	.st2{fill:none;stroke:#323232;stroke-width:3;stroke-miterlimit:10;}
+	.st3{fill:none;stroke:#323232;stroke-width:3;stroke-miterlimit:10;stroke-dasharray:12.0679,12.0679;}
+</style>
+<path class="st0" d="M34.7,165.7"/>
+<g>
+	<path class="st1" d="M115.9,148.1c-6.5,8.4-10.7,16.9-12.1,23.9c7.9-1.4,14.4-0.3,18.5,3.8c11.4,11.4-0.1,41.3-25.6,66.9
+		s-55.5,37-66.9,25.6C18.3,257,29.8,227,55.3,201.4c1.2-1.2,2.5-2.4,3.6-3.6c0.1-9.8,2.7-20.8,7.4-32.2c-8.5,5.6-17,12.5-25.1,20.4
+		C5.8,221.8-7.2,266.6,12.5,286.3c19.6,19.6,64.5,6.7,100.1-28.9s48.5-80.4,28.9-100.1C135.1,151,126.2,148.1,115.9,148.1z"/>
+</g>
+<g>
+	<path class="st1" d="M185.7,151.7c6.4-8.3,10.6-16.7,12-23.7c-7.8,1.4-14.3,0.3-18.4-3.8c-11.3-11.4,0.1-41,25.5-66.3
+		s55.1-36.7,66.4-25.3s-0.1,41-25.5,66.3c-1.2,1.2-2.4,2.4-3.7,3.5c-0.1,9.7-2.7,20.7-7.4,31.9c8.5-5.5,16.9-12.3,24.9-20.3
+		c35.4-35.3,48.3-79.7,28.8-99.2c-19.5-19.5-63.9-6.7-99.3,28.5s-48.3,79.7-28.8,99.2C166.5,148.8,175.3,151.7,185.7,151.7z"/>
+</g>
+<g>
+	<g>
+		<line class="st2" x1="16.7" y1="17.7" x2="21" y2="21.9"/>
+		<line class="st3" x1="29.6" y1="30.3" x2="284.1" y2="279.3"/>
+		<line class="st2" x1="288.4" y1="283.5" x2="292.7" y2="287.7"/>
+	</g>
+</g>
+</svg>

@@ -1,44 +1,37 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- classe per gestire la dialog per DIMSTYLE
- 
-                              -------------------
-        begin                : 2015-05-19
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QDialog
 from qgis.core import *
 from qgis.core import QgsApplication
 from qgis.utils import *
 
-import qad_dimstyle_ui
+from . import qad_dimstyle_ui
 
-from qad_variables import *
-from qad_dim import *
-from qad_msg import QadMsg, qadShowPluginHelp
-from qad_dimstyle_new_dlg import QadDIMSTYLE_NEW_Dialog
-from qad_dimstyle_details_dlg import QadDIMSTYLE_DETAILS_Dialog, QadPreviewDim
-from qad_dimstyle_diff_dlg import QadDIMSTYLE_DIFF_Dialog
-import qad_utils
+from .qad_variables import *
+from .qad_dim import *
+from .qad_msg import QadMsg, qadShowPluginHelp
+from .qad_dimstyle_new_dlg import QadDIMSTYLE_NEW_Dialog
+from .qad_dimstyle_details_dlg import QadDIMSTYLE_DETAILS_Dialog, QadPreviewDim
+from .qad_dimstyle_diff_dlg import QadDIMSTYLE_DIFF_Dialog
+from . import qad_utils
 
 
 #######################################################################################
@@ -248,9 +241,8 @@ class QadDIMSTYLEDialog(QDialog, QObject, qad_dimstyle_ui.Ui_DimStyle_Dialog):
             self.dimStyleList.edit(index)
 
             
-   def ButtonBOX_Accepted(self):     
-      self.close()
-      return True
+   def ButtonBOX_Accepted(self):
+      QDialog.accept(self)
 
 
    def ButtonHELP_Pressed(self):
@@ -267,22 +259,22 @@ class QadDIMSTYLEDialog(QDialog, QObject, qad_dimstyle_ui.Ui_DimStyle_Dialog):
       popupMenu = QMenu(self)
       action = QAction(QadMsg.translate("DimStyle_Dialog", "Set current"), popupMenu)
       popupMenu.addAction(action)
-      QObject.connect(action, SIGNAL("triggered()"), self.setCurrentStyle)
+      action.triggered.connect(self.setCurrentStyle)
 
       action = QAction(QadMsg.translate("DimStyle_Dialog", "Rename"), popupMenu)
       popupMenu.addAction(action)
-      QObject.connect(action, SIGNAL("triggered()"), self.startEditingItem)
+      action.triggered.connect(self.startEditingItem)
 
       action = QAction(QadMsg.translate("DimStyle_Dialog", "Modify description"), popupMenu)
       popupMenu.addAction(action)
-      QObject.connect(action, SIGNAL("triggered()"), self.updDescrSelectedDimStyle)
+      action.triggered.connect(self.updDescrSelectedDimStyle)
 
       action = QAction(QadMsg.translate("DimStyle_Dialog", "Remove"), popupMenu)
       currDimStyleName = QadVariables.get(QadMsg.translate("Environment variables", "DIMSTYLE"))
       if self.selectedDimStyle.name == currDimStyleName:
          action.setDisabled(True)
       popupMenu.addAction(action)
-      QObject.connect(action, SIGNAL("triggered()"), self.delSelectedDimStyle)
+      action.triggered.connect(self.delSelectedDimStyle)
 
       popupMenu.popup(self.dimStyleList.mapToGlobal(pos))
 

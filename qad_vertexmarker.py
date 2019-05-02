@@ -1,36 +1,27 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire i simboli marcatori
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 
 
-from qad_msg import QadMsg
-from qad_variables import QadVariables
+from .qad_msg import QadMsg
+from .qad_variables import QadVariables
 
 
 #===============================================================================
@@ -72,7 +63,7 @@ class QadVertexMarker(QgsMapCanvasItem):
       self.__canvas = mapCanvas
       self.__iconType = QadVertexmarkerIconTypeEnum.X # icon to be shown
       self.__iconSize = QadVariables.get(QadMsg.translate("Environment variables", "AUTOSNAPSIZE"))
-      self.__center = QgsPoint(0, 0) #  coordinates of the point in the center
+      self.__center = QgsPointXY(0, 0) #  coordinates of the point in the center
       self.__color = QColor(255, 0, 0) # color of the marker
       self.__penWidth = 2 # pen width
 

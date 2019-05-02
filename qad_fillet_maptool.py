@@ -1,41 +1,33 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire il map tool in ambito del comando fillet
- 
-                              -------------------
-        begin                : 2014-01-31
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import math
 
 
-import qad_utils
-from qad_snapper import *
-from qad_variables import *
-from qad_getpoint import *
-from qad_rubberband import QadRubberBand
-from qad_dim import QadDimStyles
+from . import qad_utils
+from .qad_snapper import *
+from .qad_variables import *
+from .qad_getpoint import *
+from .qad_rubberband import QadRubberBand
+from .qad_dim import QadDimStyles
 
 
 #===============================================================================
@@ -120,7 +112,7 @@ class Qad_fillet_maptool(QadGetPoint):
                # ritorna la sotto-geometria al vertice <atVertex> e la sua posizione nella geometria (0-based)
                subGeom, atSubGeom = qad_utils.getSubGeomAtVertex(geom, dummy[2])               
                tmpLinearObjectList = qad_utils.QadLinearObjectList()               
-               tmpLinearObjectList.fromPolyline(subGeom.asPolyline())
+               tmpLinearObjectList.fromPolylineXY(subGeom.asPolyline())
                
                # la funzione ritorna una lista con (<minima distanza al quadrato>,
                #                                    <punto più vicino>
@@ -167,15 +159,15 @@ class Qad_fillet_maptool(QadGetPoint):
                # ritorna la sotto-geometria al vertice <atVertex> e la sua posizione nella geometria (0-based)
                subGeom, atSubGeom = qad_utils.getSubGeomAtVertex(geom, dummy[2])               
                tmpLinearObjectList = qad_utils.QadLinearObjectList()
-               tmpLinearObjectList.fromPolyline(subGeom.asPolyline())
+               tmpLinearObjectList.fromPolylineXY(subGeom.asPolyline())
                tmpLinearObjectList.fillet(self.radius)
       
       if tmpLinearObjectList is not None:
          pts = tmpLinearObjectList.asPolyline(self.tolerance2ApproxCurve)
-         if self.layer.geometryType() == QGis.Polygon:
-            geom = QgsGeometry.fromPolygon([pts])
+         if self.layer.geometryType() == QgsWkbTypes.Polygon:
+            geom = QgsGeometry.fromPolygonXY([pts])
          else:
-            geom = QgsGeometry.fromPolyline(pts)
+            geom = QgsGeometry.fromPolylineXY(pts)
             
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
          geom = self.layerToMapCoordinates(self.layer, geom)            
@@ -209,7 +201,7 @@ class Qad_fillet_maptool(QadGetPoint):
          # solo layer lineari editabili che non appartengano a quote
          layerList = []
          for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
-            if layer.geometryType() == QGis.Line and layer.isEditable():
+            if layer.geometryType() == QgsWkbTypes.LineString and layer.isEditable():
                if len(QadDimStyles.getDimListByLayer(layer)) == 0:
                   layerList.append(layer)
          
@@ -226,7 +218,7 @@ class Qad_fillet_maptool(QadGetPoint):
          # solo layer lineari o poligono editabili che non appartengano a quote
          layerList = []
          for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
-            if (layer.geometryType() == QGis.Line or layer.geometryType() == QGis.Polygon) and \
+            if (layer.geometryType() == QgsWkbTypes.LineString or layer.geometryType() == QgsWkbTypes.Polygon) and \
                layer.isEditable():
                if len(QadDimStyles.getDimListByLayer(layer)) == 0:
                   layerList.append(layer)

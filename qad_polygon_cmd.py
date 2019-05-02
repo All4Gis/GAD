@@ -1,40 +1,31 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando POLYGON per disegnare un poligono regolare
- 
-                              -------------------
-        begin                : 2014-11-17
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_polygon_maptool import *
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_textwindow import *
-import qad_utils
-import qad_layer
+from .qad_polygon_maptool import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_textwindow import *
+from . import qad_utils
+from . import qad_layer
 
 
 # Classe che gestisce il comando POLYGON
@@ -51,10 +42,10 @@ class QadPOLYGONCommandClass(QadCommandClass):
       return "POLYGON"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runPOLYGONCommand)
+      action.triggered.connect(self.plugIn.runPOLYGONCommand)
 
    def getIcon(self):
-      return QIcon(":/plugins/qad/icons/polygon.png")
+      return QIcon(":/plugins/qad/icons/polygon.svg")
 
    def getNote(self):
       # impostare le note esplicative del comando
@@ -85,9 +76,9 @@ class QadPOLYGONCommandClass(QadCommandClass):
 
       
    def addPolygonToLayer(self, layer):
-      if layer.geometryType() == QGis.Line:
+      if layer.geometryType() == QgsWkbTypes.LineString:
          qad_layer.addLineToLayer(self.plugIn, layer, self.vertices)
-      elif layer.geometryType() == QGis.Polygon:                          
+      elif layer.geometryType() == QgsWkbTypes.Polygon:
          qad_layer.addPolygonToLayer(self.plugIn, layer, self.vertices)
       
 
@@ -197,14 +188,14 @@ class QadPOLYGONCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
 
       currLayer = None
       if self.virtualCmd == False: # se si vuole veramente salvare la polylinea in un layer   
          # il layer corrente deve essere editabile e di tipo linea o poligono
-         currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, [QGis.Line, QGis.Polygon])
+         currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, [QgsWkbTypes.LineString, QgsWkbTypes.Polygon])
          if currLayer is None:
             self.showErr(errMsg)
             return True # fine comando
@@ -263,7 +254,7 @@ class QadPOLYGONCommandClass(QadCommandClass):
          if type(value) == unicode:
             if value == QadMsg.translate("Command_POLYGON", "Edge") or value == "Edge":
                self.WaitForFirstEdgePt()
-         elif type(value) == QgsPoint:
+         elif type(value) == QgsPointXY:
             self.centerPt = value
             self.getPointMapTool().centerPt = self.centerPt
             self.WaitForInscribedCircumscribedOption() 
@@ -287,7 +278,7 @@ class QadPOLYGONCommandClass(QadCommandClass):
             else:
                value = self.getPointMapTool().point
          else: # la parola chiave arriva come parametro della funzione
-            value = msg        
+            value = msg
          
          if type(value) == unicode:
             self.constructionModeByCenter = value
@@ -319,8 +310,8 @@ class QadPOLYGONCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint or type(value) == float: # se é stato inserito il raggio del cerchio            
-            if type(value) == QgsPoint: # se é stato inserito il raggio del cerchio con un punto                        
+         if type(value) == QgsPointXY or type(value) == float: # se é stato inserito il raggio del cerchio
+            if type(value) == QgsPointXY: # se é stato inserito il raggio del cerchio con un punto
                self.radius = qad_utils.getDistance(self.centerPt, value)
                ptStart = value
             else:
@@ -364,7 +355,7 @@ class QadPOLYGONCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint:
+         if type(value) == QgsPointXY:
             self.firstEdgePt = value
             self.WaitForSecondEdgePt(currLayer)
 
@@ -389,7 +380,7 @@ class QadPOLYGONCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint:
+         if type(value) == QgsPointXY:
             self.vertices.extend(qad_utils.getPolygonByNsidesEdgePts(self.sideNumber, self.firstEdgePt, value))
 
             if self.virtualCmd == False: # se si vuole veramente salvare i buffer in un layer

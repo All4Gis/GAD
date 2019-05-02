@@ -248,6 +248,15 @@ Latitude and Longitude syntax is specified as follows:
    | You can separate pair entries with a space, a comma, or a slash:
      37.7 N 122.2 W or 37.7 N,122.2 W or 37.7 N/122.2 W
 
+DYNAMIC INPUT
+-------------
+
+You can turn off dynamic input temporarily by holding down the F12 key.
+Dynamic input provides a command interface near the cursor in the
+drawing area.
+
+Run DSETTINGS command to set dynamic input properties.
+
 Selecting objects
 -----------------
 
@@ -535,9 +544,12 @@ Optional fields:
      type according to the following scheme:
    | "D1" = Dimension line 1
    | "D2" = Dimension line 2
+   | “X1” = Extension of dimension line 1
+   | “X2” = Extension of dimension line 2
    | "E1" = Extension line 1"
    | "E2" = Extension line 2
    | "L" = leader line when the text is outside the dimension
+   | “CL” = Center line for center marker of an arc or circle
    | (required if you want to use the editing features of an existing
      dimension)
 
@@ -600,9 +612,8 @@ Optional settings:
 -  The linetype can be read from a character field that stores the
    linetype of dimension lines
 
-Dimension commands (DIMLINEAR, DIMALIGNED) refer to the current
-dimension style. To set the current dimension style run DIMSTYLE
-command.
+Dimension commands refer to the current dimension style. To set the
+current dimension style run DIMSTYLE command.
 
 Commands customization
 ----------------------
@@ -691,6 +702,11 @@ DIMLINEAR
 ~~~~~~~~~
 
 Draws a linear dimension.
+
+DIMRADIUS
+~~~~~~~~~
+
+Draws a radial dimension.
 
 DIMSTYLE
 ~~~~~~~~
@@ -1075,6 +1091,73 @@ DIMSTYLE
 
 The same as the most popular CAD. Project variable.
 
+DYNDIGRIP
+~~~~~~~~~
+
+| Turns Dynamic Input features on and off. Global variable.
+| 0 = None.
+| 1 = Resulting dimension.
+| 2 = Length change dimension.
+| 4 = Absolute angle dimension .
+| 8 Angle change dimension.
+
+DYNDIVIS
+~~~~~~~~
+
+The same as the most popular CAD. Global variable.
+
+DYNEDITFORECOLOR
+~~~~~~~~~~~~~~~~
+
+Set the dynamic input text color (RGB). Global variable.
+
+DYNEDITBACKCOLOR
+~~~~~~~~~~~~~~~~
+
+Set the dynamic input background text color (RGB). Global variable.
+
+DYNEDITBORDERCOLOR
+~~~~~~~~~~~~~~~~~~
+
+Set the dynamic input border color (RGB). Global variable.
+
+DYNMODE
+~~~~~~~
+
+The same as the most popular CAD. Global variable.
+
+DYNPICOORDS
+~~~~~~~~~~~
+
+The same as the most popular CAD. Global variable.
+
+DYNPIFORMAT
+~~~~~~~~~~~
+
+The same as the most popular CAD. Global variable.
+
+DYNPIVIS
+~~~~~~~~
+
+| Controls when pointer input is displayed. Global variable.
+| 1 = Automatically at a prompt for a point
+| 2 = Always
+
+DYNPROMPT
+~~~~~~~~~
+
+The same as the most popular CAD. Global variable.
+
+DYNTOOLTIPS
+~~~~~~~~~~~
+
+The same as the most popular CAD. Global variable.
+
+DYNTRECKINGVECTORCOLOR
+~~~~~~~~~~~~~~~~~~~~~~
+
+Set the Autotreck vector color (RGB). Global variable.
+
 EDGEMODE
 ~~~~~~~~
 
@@ -1228,6 +1311,18 @@ TOLERANCE2APPROXCURVE
 
 Maximum error approximating a curve to segments. Valid values from
 0.000001, real type, default value 0.1. Project variable.
+
+TOOLTIPTRANSPARENCY
+~~~~~~~~~~~~~~~~~~~
+
+Sets the transparency for drafting tooltips. Valid values from 0 to 100.
+Global variable.
+
+TOOLTIPSIZE
+~~~~~~~~~~~
+
+Sets the display size for drafting tooltips, and dynamic input text.
+Valid values from -3 to 6. Global variable.
 
 WINDOWAREACOLOR
 ~~~~~~~~~~~~~~~

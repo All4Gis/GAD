@@ -1,48 +1,39 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando ALLUNGA per allungare un oggetto 
- 
-                              -------------------
-        begin                : 2015-10-05
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 
 
-import qad_utils
-from qad_generic_cmd import QadCommandClass
-from qad_getdist_cmd import QadGetDistClass
-from qad_getangle_cmd import QadGetAngleClass
-from qad_snapper import *
-from qad_getpoint import *
-from qad_lengthen_maptool import *
-from qad_textwindow import *
-from qad_msg import QadMsg
-import qad_layer
-from qad_arc import *
-from qad_circle import *
-from qad_dim import QadDimStyles
-import qad_grip
+from . import qad_utils
+from .qad_generic_cmd import QadCommandClass
+from .qad_getdist_cmd import QadGetDistClass
+from .qad_getangle_cmd import QadGetAngleClass
+from .qad_snapper import *
+from .qad_getpoint import *
+from .qad_lengthen_maptool import *
+from .qad_textwindow import *
+from .qad_msg import QadMsg
+from . import qad_layer
+from .qad_arc import *
+from .qad_circle import *
+from .qad_dim import QadDimStyles
+from . import qad_grip
 
 
 # Classe che gestisce il comando LENGTHEN
@@ -59,7 +50,7 @@ class QadLENGTHENCommandClass(QadCommandClass):
       return "LENGTHEN"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runLENGTHENCommand)
+      action.triggered.connect(self.plugIn.runLENGTHENCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/lengthen.png")
@@ -137,7 +128,7 @@ class QadLENGTHENCommandClass(QadCommandClass):
       # ritorna la sotto-geometria al vertice <atVertex> e la sua posizione nella geometria (0-based)
       subGeom, self.atSubGeom = qad_utils.getSubGeomAtVertex(geom, dummy[2])               
       self.linearObjectList = qad_utils.QadLinearObjectList()               
-      self.linearObjectList.fromPolyline(subGeom.asPolyline())
+      self.linearObjectList.fromPolylineXY(subGeom.asPolyline())
       
       if qad_utils.getDistance(self.linearObjectList.getStartPt(), transformedPt) <= \
          qad_utils.getDistance(self.linearObjectList.getEndPt(), transformedPt):
@@ -221,7 +212,7 @@ class QadLENGTHENCommandClass(QadCommandClass):
          return False
                
       pts = newLinearObjectList.asPolyline() 
-      updSubGeom = QgsGeometry.fromPolyline(pts)
+      updSubGeom = QgsGeometry.fromPolylineXY(pts)
                
       updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom)
       if updGeom is None:
@@ -267,7 +258,7 @@ class QadLENGTHENCommandClass(QadCommandClass):
       
       LinearObjectListToMisure = qad_utils.QadLinearObjectList()
       pointList = subGeom.asPolyline()
-      LinearObjectListToMisure.fromPolyline(pointList)
+      LinearObjectListToMisure.fromPolylineXY(pointList)
       # la trasformo in unità di mappa
       LinearObjectListToMisure.transformFromCRSToCRS(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs())      
       
@@ -275,7 +266,7 @@ class QadLENGTHENCommandClass(QadCommandClass):
       msg = msg.format(str(LinearObjectListToMisure.length()))
 
       arc = QadArc()
-      startEndVertices = arc.fromPolyline(pointList, 0)
+      startEndVertices = arc.fromPolylineXY(pointList, 0)
       # se la polilinea è composta solo da un arco
       if startEndVertices and startEndVertices[0] == 0 and startEndVertices[1] == len(pointList)-1:
          msg = msg + QadMsg.translate("Command_LENGTHEN", ", included angle: {0}")
@@ -476,7 +467,7 @@ class QadLENGTHENCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
 
@@ -523,7 +514,7 @@ class QadLENGTHENCommandClass(QadCommandClass):
                self.waitForObjectSel()
                return False
 
-         elif type(value) == QgsPoint: # se é stato selezionato un punto
+         elif type(value) == QgsPointXY: # se é stato selezionato un punto
             if self.getPointMapTool().entity.isInitialized():
                self.showLength(self.getPointMapTool().entity, value)
             else:
@@ -531,7 +522,7 @@ class QadLENGTHENCommandClass(QadCommandClass):
                # solo layer di tipo lineari che non appartengano a quote o di tipo poligono 
                layerList = []
                for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
-                  if layer.geometryType() == QGis.Line or layer.geometryType() == QGis.Polygon:
+                  if layer.geometryType() == QgsWkbTypes.LineGeometry or layer.geometryType() == QgsWkbTypes.PolygonGeometry:
                      if len(QadDimStyles.getDimListByLayer(layer)) == 0:
                         layerList.append(layer)
                                      
@@ -574,7 +565,7 @@ class QadLENGTHENCommandClass(QadCommandClass):
          if type(value) == unicode:
             if value == QadMsg.translate("Command_LENGTHEN", "Angle") or value == "Angle":
                self.waitForDeltaAngle(msgMapTool, msg)
-         elif type(value) == QgsPoint: # se é stato inserito un punto
+         elif type(value) == QgsPointXY: # se é stato inserito un punto
             self.startPt = value
             self.waitForDeltaLength(msgMapTool, msg)
          elif type(value) == float: # se é stato inserito il delta
@@ -635,7 +626,7 @@ class QadLENGTHENCommandClass(QadCommandClass):
                   self.plugIn.undoEditCommand()
                else:
                   self.showMsg(QadMsg.translate("QAD", "\nThe command has been canceled."))                  
-         elif type(value) == QgsPoint: # se é stato selezionato un punto
+         elif type(value) == QgsPointXY: # se é stato selezionato un punto
             if self.getPointMapTool().entity.isInitialized():
                self.setInfo(self.getPointMapTool().entity, value)
                if self.OpMode != "DYnamic":
@@ -648,7 +639,7 @@ class QadLENGTHENCommandClass(QadCommandClass):
                # solo layer lineari editabili che non appartengano a quote
                layerList = []
                for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
-                  if layer.geometryType() == QGis.Line and layer.isEditable():
+                  if layer.geometryType() == QgsWkbTypes.LineGeometry and layer.isEditable():
                      if len(QadDimStyles.getDimListByLayer(layer)) == 0:
                         layerList.append(layer)
                                      
@@ -724,7 +715,7 @@ class QadLENGTHENCommandClass(QadCommandClass):
          if type(value) == unicode:
             if value == QadMsg.translate("Command_LENGTHEN", "Angle") or value == "Angle":
                self.waitForTotalAngle(msgMapTool, msg)
-         elif type(value) == QgsPoint: # se é stato inserito un punto
+         elif type(value) == QgsPointXY: # se é stato inserito un punto
             self.startPt = value
             self.waitForTotalLength(msgMapTool, msg)
          elif type(value) == float: # se é stato inserito il delta
@@ -777,7 +768,7 @@ class QadLENGTHENCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito un punto
+         if type(value) == QgsPointXY: # se é stato inserito un punto
             self.lengthen(value)
             
          # si appresta ad attendere la selezione degli oggetti da allungare
@@ -802,7 +793,7 @@ class QadGRIPLENGTHENCommandClass(QadCommandClass):
       self.entity = None
       self.skipToNextGripCommand = False
       self.copyEntities = False
-      self.basePt = QgsPoint()
+      self.basePt = QgsPointXY()
       self.nOperationsToUndo = 0
       
       self.linearObjectList = None
@@ -863,7 +854,7 @@ class QadGRIPLENGTHENCommandClass(QadCommandClass):
                subGeom, self.atSubGeom = qad_utils.getSubGeomAtVertex(geom, dummy[2])               
                self.linearObjectList = qad_utils.QadLinearObjectList()
 
-               self.linearObjectList.fromPolyline(subGeom.asPolyline())
+               self.linearObjectList.fromPolylineXY(subGeom.asPolyline())
                
                if qad_utils.getDistance(self.linearObjectList.getStartPt(), gripPoint.getPoint()) <= \
                   qad_utils.getDistance(self.linearObjectList.getEndPt(), gripPoint.getPoint()):
@@ -929,7 +920,7 @@ class QadGRIPLENGTHENCommandClass(QadCommandClass):
          return False
                
       pts = newLinearObjectList.asPolyline() 
-      updSubGeom = QgsGeometry.fromPolyline(pts)
+      updSubGeom = QgsGeometry.fromPolylineXY(pts)
                
       updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom)
       if updGeom is None:
@@ -980,7 +971,7 @@ class QadGRIPLENGTHENCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
 
@@ -1029,7 +1020,7 @@ class QadGRIPLENGTHENCommandClass(QadCommandClass):
                self.waitForDynamicPt()
             elif value == QadMsg.translate("Command_GRIP", "eXit") or value == "eXit":
                return True # fine comando
-         elif type(value) == QgsPoint: # se é stato selezionato un punto
+         elif type(value) == QgsPointXY: # se é stato selezionato un punto
             if ctrlKey:
                self.copyEntities = True
    

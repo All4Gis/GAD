@@ -1,42 +1,33 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando INSERT per inserire un simbolo
- 
-                              -------------------
-        begin                : 2013-12-31
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-import qad_utils
-from qad_generic_cmd import QadCommandClass
-import qad_layer
-from qad_getpoint import *
-from qad_getdist_cmd import QadGetDistClass
-from qad_getangle_cmd import QadGetAngleClass
-from qad_textwindow import *
-from qad_msg import QadMsg
+from . import qad_utils
+from .qad_generic_cmd import QadCommandClass
+from . import qad_layer
+from .qad_getpoint import *
+from .qad_getdist_cmd import QadGetDistClass
+from .qad_getangle_cmd import QadGetAngleClass
+from .qad_textwindow import *
+from .qad_msg import QadMsg
 
 
 # Classe che gestisce il comando INSERT
@@ -53,10 +44,10 @@ class QadINSERTCommandClass(QadCommandClass):
       return "INSERT"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runINSERTCommand)
+      action.triggered.connect(self.plugIn.runINSERTCommand)
    
    def getIcon(self):
-      return QIcon(":/plugins/qad/icons/insert.png")
+      return QIcon(":/plugins/qad/icons/point.svg")
 
    def getNote(self):
       # impostare le note esplicative del comando
@@ -102,11 +93,11 @@ class QadINSERTCommandClass(QadCommandClass):
 
    def addFeature(self, layer):
       transformedPoint = self.mapToLayerCoordinates(layer, self.insPt)
-      g = QgsGeometry.fromPoint(transformedPoint)
+      g = QgsGeometry.fromPointXY(transformedPoint)
       f = QgsFeature()
       f.setGeometry(g)
       # Add attribute fields to feature.
-      fields = layer.pendingFields()
+      fields = layer.fields()
       f.setFields(fields)
       
       # assegno i valori di default
@@ -129,20 +120,20 @@ class QadINSERTCommandClass(QadCommandClass):
       
       
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
-         return True # fine comando
+         return True
       
-      currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, QGis.Point)
+      currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, QgsWkbTypes.PointGeometry)
       if currLayer is None:
          self.showErr(errMsg)
-         return True # fine comando
+         return True
 
       if qad_layer.isSymbolLayer(currLayer) == False:
          errMsg = QadMsg.translate("QAD", "\nCurrent layer is not a symbol layer.")
          errMsg = errMsg + QadMsg.translate("QAD", "\nA symbol layer is a vector punctual layer without label.\n")
          self.showErr(errMsg)         
-         return True # fine comando
+         return True
 
                
       #=========================================================================
@@ -171,7 +162,7 @@ class QadINSERTCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             pt = msg
 
-         self.insPt = QgsPoint(pt)
+         self.insPt = QgsPointXY(pt)
          self.plugIn.setLastPoint(self.insPt)
          
          # se la scala dipende da un campo 

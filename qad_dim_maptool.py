@@ -1,42 +1,33 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire il map tool in ambito dei comandi di quotatura
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import math
 
 
-import qad_utils
-from qad_snapper import *
-from qad_snappointsdisplaymanager import *
-from qad_variables import *
-from qad_getpoint import *
-from qad_dim import *
-from qad_rubberband import QadRubberBand
+from . import qad_utils
+from .qad_snapper import *
+from .qad_snappointsdisplaymanager import *
+from .qad_variables import *
+from .qad_getpoint import *
+from .qad_dim import *
+from .qad_rubberband import QadRubberBand
 
 
 #===============================================================================
@@ -57,6 +48,8 @@ class Qad_dim_maptool_ModeEnum():
    ASK_FOR_PARTIAL_ARC_PT_FOR_DIM_ARC = 6
    # noto i punti di quotatura si richiede la posizione della linea di quota arco
    FIRST_SECOND_PT_KNOWN_ASK_FOR_ARC_DIM_LINE_POS = 7
+   # noto l'oggetto da quotare (arco o cerchio) si richiede la posizione della linea di quota raggio
+   OBJ_KNOWN_ASK_FOR_RADIUS_DIM_LINE_POS = 8
 
 
 #===============================================================================
@@ -210,6 +203,13 @@ class Qad_dim_maptool(QadGetPoint):
                                                                      self.dimArc, \
                                                                      self.tmpPoint, \
                                                                      self.measure)
+      # noto l'oggetto da quotare (arco o cerchio) si richiede la posizione della linea di quota raggio
+      elif self.mode == Qad_dim_maptool_ModeEnum.OBJ_KNOWN_ASK_FOR_RADIUS_DIM_LINE_POS:
+         dimObj = self.dimCircle if (self.dimCircle is not None) else self.dimArc
+         dimEntity, textOffsetRect = self.dimStyle.getRadiusDimFeatures(self.canvas, \
+                                                                        dimObj, \
+                                                                        self.tmpPoint, \
+                                                                        self.measure)
 
       if dimEntity is not None:
          # testo di quota
@@ -257,4 +257,7 @@ class Qad_dim_maptool(QadGetPoint):
          self.setDrawMode(QadGetPointDrawModeEnum.NONE)
       # noto i punti di quotatura si richiede la posizione della linea di quota
       elif self.mode == Qad_dim_maptool_ModeEnum.FIRST_SECOND_PT_KNOWN_ASK_FOR_ARC_DIM_LINE_POS:
-         self.setDrawMode(QadGetPointDrawModeEnum.NONE)         
+         self.setDrawMode(QadGetPointDrawModeEnum.NONE)
+      # noto l'oggetto da quotare (arco o cerchio) si richiede la posizione della linea di quota raggio
+      elif self.mode == Qad_dim_maptool_ModeEnum.OBJ_KNOWN_ASK_FOR_RADIUS_DIM_LINE_POS:
+         self.setDrawMode(QadGetPointDrawModeEnum.NONE)

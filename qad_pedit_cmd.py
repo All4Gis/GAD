@@ -1,47 +1,37 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- comando PEDIT per editare una polilinea o un poligono esistente
- 
-                              -------------------
-        begin                : 2014-01-13
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
-
-
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 
 
-from qad_generic_cmd import QadCommandClass
-from qad_getdist_cmd import QadGetDistClass
-from qad_snapper import *
-from qad_pedit_maptool import *
-from qad_ssget_cmd import QadSSGetClass
-from qad_msg import QadMsg
-from qad_textwindow import *
-import qad_utils
-import qad_layer
-from qad_variables import *
-from qad_snappointsdisplaymanager import *
-from qad_dim import QadDimStyles
-import qad_grip
+from .qad_generic_cmd import QadCommandClass
+from .qad_getdist_cmd import QadGetDistClass
+from .qad_snapper import *
+from .qad_pedit_maptool import *
+from .qad_ssget_cmd import QadSSGetClass
+from .qad_msg import QadMsg
+from .qad_textwindow import *
+from . import qad_utils
+from . import qad_layer
+from .qad_variables import *
+from .qad_snappointsdisplaymanager import *
+from .qad_dim import QadDimStyles
+from . import qad_grip
 
 
 # Classe che gestisce il comando PEDIT
@@ -58,7 +48,7 @@ class QadPEDITCommandClass(QadCommandClass):
       return "PEDIT"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runPEDITCommand)
+      action.triggered.connect(self.plugIn.runPEDITCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/pedit.png")
@@ -85,7 +75,7 @@ class QadPEDITCommandClass(QadCommandClass):
       self.editVertexMode = None
       self.nOperationsToUndo = 0
          
-      self.firstPt = QgsPoint()
+      self.firstPt = QgsPointXY()
       self.vertexAt = 0
       self.secondVertexAt = 0
       self.after = True
@@ -122,7 +112,7 @@ class QadPEDITCommandClass(QadCommandClass):
 
    def getCurrentContextualMenu(self):
       if self.step == 2: # quando si é in fase di selezione entità
-         return self.SSGetClass.getCurrentContextualMenu()
+         return None # return self.SSGetClass.getCurrentContextualMenu()
       # quando si é in fase di richiesta distanza
       elif self.step == 12:
          return self.GetDistClass.getCurrentContextualMenu()
@@ -147,7 +137,7 @@ class QadPEDITCommandClass(QadCommandClass):
       if dummy[2] is not None:
          # ritorna la sotto-geometria al vertice <atVertex> e la sua posizione nella geometria (0-based)
          subGeom, self.atSubGeom = qad_utils.getSubGeomAtVertex(geom, dummy[2])
-         self.linearObjectList.fromPolyline(subGeom.asPolyline())
+         self.linearObjectList.fromPolylineXY(subGeom.asPolyline())
          if self.linearObjectList.getCircle() is not None:
             self.entity.deselectOnLayer()
             return False
@@ -226,8 +216,8 @@ class QadPEDITCommandClass(QadCommandClass):
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
          geom = self.layerToMapCoordinates(layer, self.entity.getGeometry())
          
-         if layer.geometryType() == QGis.Line:
-            updGeom = qad_utils.setSubGeom(geom, QgsGeometry.fromPolyline(pts), self.atSubGeom)
+         if layer.geometryType() == QgsWkbTypes.LineString:
+            updGeom = qad_utils.setSubGeom(geom, QgsGeometry.fromPolylineXY(pts), self.atSubGeom)
             # trasformo la geometria nel crs del layer
             f.setGeometry(self.mapToLayerCoordinates(layer, updGeom))
                
@@ -238,10 +228,10 @@ class QadPEDITCommandClass(QadCommandClass):
          else: # layer di tipo poligono
             if toClose == False: # apri
                # aggiungo le linee nei layer temporanei di QAD
-               LineTempLayer = qad_layer.createQADTempLayer(self.plugIn, QGis.Line)
+               LineTempLayer = qad_layer.createQADTempLayer(self.plugIn, QgsWkbTypes.LineString)
                self.plugIn.addLayerToLastEditCommand("Feature edited", LineTempLayer)
                        
-               lineGeoms = [QgsGeometry.fromPolyline(pts)]
+               lineGeoms = [QgsGeometry.fromPolylineXY(pts)]
                
                # trasformo la geometria in quella dei layer temporanei
                # plugIn, pointGeoms, lineGeoms, polygonGeoms, coord, refresh
@@ -306,7 +296,7 @@ class QadPEDITCommandClass(QadCommandClass):
          geom = self.layerToMapCoordinates(layer, self.entity.getGeometry())
 
          self.linearObjectList.reverse()
-         updSubGeom = QgsGeometry.fromPolyline(self.linearObjectList.asPolyline(tolerance2ApproxCurve))
+         updSubGeom = QgsGeometry.fromPolylineXY(self.linearObjectList.asPolyline(tolerance2ApproxCurve))
          updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom)
          if updGeom is not None:
             # trasformo la geometria nel crs del layer
@@ -370,19 +360,19 @@ class QadPEDITCommandClass(QadCommandClass):
          # aggiungo l'entità a cui unirsi
          layer = self.entity.layer
          
-         if layer.geometryType() != QGis.Line:
+         if layer.geometryType() != QgsWkbTypes.LineString:
             return
 
          tolerance2ApproxCurve = QadVariables.get(QadMsg.translate("Environment variables", "TOLERANCE2APPROXCURVE"))
          
          f = self.entity.getFeature()
-         if f.geometry().wkbType() != QGis.WKBLineString:
+         if f.geometry().wkbType() != QgsWkbTypes.LineString:
             return
          newFeature = QgsFeature()
          newFeature.initAttributes(1)
          newFeature.setAttribute(0, 0)
          
-         geom = QgsGeometry.fromPolyline(self.linearObjectList.asPolyline(tolerance2ApproxCurve))
+         geom = QgsGeometry.fromPolylineXY(self.linearObjectList.asPolyline(tolerance2ApproxCurve))
          newFeature.setGeometry(geom)
          i = i + 1
          
@@ -395,11 +385,11 @@ class QadPEDITCommandClass(QadCommandClass):
       for layerEntitySet in self.entitySet.layerEntitySetList:
          layer = layerEntitySet.layer
          
-         if layer.geometryType() != QGis.Line:
+         if layer.geometryType() != QgsWkbTypes.LineString:
             continue
                   
          for f in layerEntitySet.getFeatureCollection():
-            if f.geometry().wkbType() != QGis.WKBLineString:
+            if f.geometry().wkbType() != QgsWkbTypes.LineString:
                continue
             newFeature = QgsFeature()
             newFeature.initAttributes(1)
@@ -501,7 +491,7 @@ class QadPEDITCommandClass(QadCommandClass):
          geom = self.layerToMapCoordinates(layer, f.geometry())
 
          self.linearObjectList.curve(toCurve)
-         updSubGeom = QgsGeometry.fromPolyline(self.linearObjectList.asPolyline(tolerance2ApproxCurve))
+         updSubGeom = QgsGeometry.fromPolylineXY(self.linearObjectList.asPolyline(tolerance2ApproxCurve))
          updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom)
          if updGeom is not None:
             # trasformo la geometria nel crs del layer
@@ -552,7 +542,7 @@ class QadPEDITCommandClass(QadCommandClass):
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
          geom = self.layerToMapCoordinates(layer, f.geometry())
 
-         updSubGeom = QgsGeometry.fromPolyline(self.linearObjectList.asPolyline(tolerance2ApproxCurve)).simplify(self.simplifyTolerance)        
+         updSubGeom = QgsGeometry.fromPolylineXY(self.linearObjectList.asPolyline(tolerance2ApproxCurve)).simplify(self.simplifyTolerance)
          updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom)
          if updGeom is not None:
             # trasformo la geometria nel crs del layer
@@ -608,7 +598,7 @@ class QadPEDITCommandClass(QadCommandClass):
          else:
             self.linearObjectList.insertPoint(self.vertexAt - 1, pt)
                
-      updSubGeom = QgsGeometry.fromPolyline(self.linearObjectList.asPolyline(tolerance2ApproxCurve))
+      updSubGeom = QgsGeometry.fromPolylineXY(self.linearObjectList.asPolyline(tolerance2ApproxCurve))
       updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom)
       if updGeom is None:
          return
@@ -639,7 +629,7 @@ class QadPEDITCommandClass(QadCommandClass):
 
       self.linearObjectList.movePoint(self.vertexAt, pt)
                
-      updSubGeom = QgsGeometry.fromPolyline(self.linearObjectList.asPolyline(tolerance2ApproxCurve))
+      updSubGeom = QgsGeometry.fromPolylineXY(self.linearObjectList.asPolyline(tolerance2ApproxCurve))
       updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom)
       if updGeom is None:
          return
@@ -673,27 +663,27 @@ class QadPEDITCommandClass(QadCommandClass):
       if self.vertexAt < self.secondVertexAt:
          firstPt = self.linearObjectList.getPointAtVertex(self.vertexAt)
          secondPt = self.linearObjectList.getPointAtVertex(self.secondVertexAt)
-         for i in xrange(self.vertexAt, self.secondVertexAt, 1):
+         for i in range(self.vertexAt, self.secondVertexAt, 1):
             self.linearObjectList.remove(self.vertexAt)
          self.linearObjectList.insert(self.vertexAt, [firstPt, secondPt])
       elif self.vertexAt > self.secondVertexAt:
          if self.linearObjectList.isClosed():
             firstPt = self.linearObjectList.getPointAtVertex(self.vertexAt)
             secondPt = self.linearObjectList.getPointAtVertex(self.secondVertexAt)
-            for i in xrange(self.vertexAt, self.linearObjectList.qty(), 1):
+            for i in range(self.vertexAt, self.linearObjectList.qty(), 1):
                self.linearObjectList.remove(self.vertexAt)
-            for i in xrange(0, self.secondVertexAt, 1):
+            for i in range(0, self.secondVertexAt, 1):
                self.linearObjectList.remove(0)
             
             self.linearObjectList.insert(self.vertexAt, [firstPt, secondPt])
          else:
             firstPt = self.linearObjectList.getPointAtVertex(self.secondVertexAt)
             secondPt = self.linearObjectList.getPointAtVertex(self.vertexAt)
-            for i in xrange(self.secondVertexAt, self.vertexAt, 1):
+            for i in range(self.secondVertexAt, self.vertexAt, 1):
                self.linearObjectList.remove(self.secondVertexAt)
             self.linearObjectList.insert(self.secondVertexAt, [firstPt, secondPt])
                        
-      updSubGeom = QgsGeometry.fromPolyline(self.linearObjectList.asPolyline(tolerance2ApproxCurve))
+      updSubGeom = QgsGeometry.fromPolylineXY(self.linearObjectList.asPolyline(tolerance2ApproxCurve))
       updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom)
       if updGeom is None:
          return
@@ -725,7 +715,7 @@ class QadPEDITCommandClass(QadCommandClass):
       firstPt = self.linearObjectList.getPointAtVertex(self.vertexAt)
       secondPt = self.linearObjectList.getPointAtVertex(self.secondVertexAt)
 
-      result = qad_utils.breakQgsGeometry(QgsGeometry.fromPolyline(self.linearObjectList.asPolyline(tolerance2ApproxCurve)), \
+      result = qad_utils.breakQgsGeometry(QgsGeometry.fromPolylineXY(self.linearObjectList.asPolyline(tolerance2ApproxCurve)), \
                                           firstPt, secondPt, \
                                           tolerance2ApproxCurve)                  
       if result is None:
@@ -756,7 +746,7 @@ class QadPEDITCommandClass(QadCommandClass):
             self.plugIn.destroyEditCommand()
             return            
 
-      self.linearObjectList.fromPolyline(line1.asPolyline())
+      self.linearObjectList.fromPolylineXY(line1.asPolyline())
       self.plugIn.endEditCommand()
       self.nOperationsToUndo = self.nOperationsToUndo + 1
 
@@ -790,12 +780,12 @@ class QadPEDITCommandClass(QadCommandClass):
       # verifico se ci sono layer di tipo linea
       line = False
       if self.entity.isInitialized(): # selezionato solo un oggetto
-         if self.entity.layer.geometryType() == QGis.Line:
+         if self.entity.layer.geometryType() == QgsWkbTypes.LineString:
             line = True
       else:            
          layerList = self.entitySet.getLayerList()
          for layer in layerList:
-            if layer.geometryType() == QGis.Line:
+            if layer.geometryType() == QgsWkbTypes.LineString:
                line = True
                break
 
@@ -922,7 +912,7 @@ class QadPEDITCommandClass(QadCommandClass):
                  QadMsg.translate("Command_PEDIT", "Previous")
       englishKeyWords = "Next" + "/" + "Previous"
       
-      if self.entity.layer.geometryType() == QGis.Line:
+      if self.entity.layer.geometryType() == QgsWkbTypes.LineString:
          keyWords = keyWords + "/"  + QadMsg.translate("Command_PEDIT", "Break")
          englishKeyWords = englishKeyWords + "/" + "Break"
 
@@ -1021,7 +1011,7 @@ class QadPEDITCommandClass(QadCommandClass):
 
 
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
       
@@ -1054,7 +1044,7 @@ class QadPEDITCommandClass(QadCommandClass):
                self.SSGetClass.run(msgMapTool, msg)
                self.step = 2
                return False               
-         elif type(value) == QgsPoint: # se é stato selezionato un punto
+         elif type(value) == QgsPointXY: # se é stato selezionato un punto
             self.entity.clear()
             self.linearObjectList.removeAll()            
 
@@ -1068,7 +1058,7 @@ class QadPEDITCommandClass(QadCommandClass):
                # solo layer lineari o poligono editabili che non appartengano a quote
                layerList = []
                for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
-                  if (layer.geometryType() == QGis.Line or layer.geometryType() == QGis.Polygon) and \
+                  if (layer.geometryType() == QgsWkbTypes.LineString or layer.geometryType() == QgsWkbTypes.Polygon) and \
                      layer.isEditable():
                      if len(QadDimStyles.getDimListByLayer(layer)) == 0:
                         layerList.append(layer)
@@ -1132,6 +1122,7 @@ class QadPEDITCommandClass(QadCommandClass):
             self.WaitForVertexEditingMenu()
             return False
          elif value == QadMsg.translate("Command_PEDIT", "Join") or value == "Join":
+            qad_utils.deselectAll(self.plugIn.canvas.layers())
             if self.entity.isInitialized(): # selezionato solo un oggetto
                self.SSGetClass.checkPolygonLayer = False # scarto i poligoni
                self.SSGetClass.run(msgMapTool, msg)
@@ -1164,7 +1155,7 @@ class QadPEDITCommandClass(QadCommandClass):
                   subGeom = qad_utils.getSubGeomAt(geom, self.atSubGeom)
                   # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
                   subGeom = self.layerToMapCoordinates(self.entity.layer, subGeom)
-                  self.linearObjectList.fromPolyline(subGeom.asPolyline())
+                  self.linearObjectList.fromPolylineXY(subGeom.asPolyline())
          else:
             return True # fine comando
             
@@ -1196,7 +1187,7 @@ class QadPEDITCommandClass(QadCommandClass):
             if value == QadMsg.translate("Command_PEDIT", "Join type") or value == "Join type":
                # si appresta ad attendere il tipo di unione
                self.waitForJoinType()
-         elif type(value) == QgsPoint: # se é stato inserito il primo punto per il calcolo della distanza
+         elif type(value) == QgsPointXY: # se é stato inserito il primo punto per il calcolo della distanza
             # imposto il map tool
             self.firstPt.set(value.x(), value.y())
             self.getPointMapTool().firstPt = self.firstPt
@@ -1347,7 +1338,7 @@ class QadPEDITCommandClass(QadCommandClass):
                return False
             elif value == QadMsg.translate("Command_PEDIT", "eXit") or value == "eXit":
                self.WaitForMainMenu()
-         elif type(value) == QgsPoint: # se é stato inserito un punto
+         elif type(value) == QgsPointXY: # se é stato inserito un punto
             # cerco il vertice più vicino al punto
             self.vertexAt = self.linearObjectList.closestVertexWithContext(value)
             self.WaitForVertexEditingMenu()
@@ -1446,7 +1437,7 @@ class QadPEDITCommandClass(QadCommandClass):
                self.WaitForVertexEditingMenu()
             elif value == QadMsg.translate("Command_PEDIT", "eXit") or value == "eXit":
                self.WaitForVertexEditingMenu()
-         elif type(value) == QgsPoint: # se é stato inserito il primo punto
+         elif type(value) == QgsPointXY: # se é stato inserito il primo punto
             # cerco il vertice più vicino al punto            
             self.secondVertexAt = self.linearObjectList.closestVertexWithContext(value)
             self.WaitForSecondVertex()
@@ -1481,13 +1472,13 @@ class QadGRIPINSERTREMOVEVERTEXCommandClass(QadCommandClass):
       self.entity = None
       self.skipToNextGripCommand = False
       self.copyEntities = False
-      self.basePt = QgsPoint()
+      self.basePt = QgsPointXY()
       self.nOperationsToUndo = 0
 
       self.after = True
       self.insert_mode = True
       self.vertexAt = 0
-      self.firstPt = QgsPoint()
+      self.firstPt = QgsPointXY()
       self.linearObjectList = qad_utils.QadLinearObjectList()
 
    def __del__(self):
@@ -1547,7 +1538,7 @@ class QadGRIPINSERTREMOVEVERTEXCommandClass(QadCommandClass):
                if dummy[2] is not None:
                   # ritorna la sotto-geometria al vertice <atVertex> e la sua posizione nella geometria (0-based)
                   subGeom, self.atSubGeom = qad_utils.getSubGeomAtVertex(geom, dummy[2])
-                  self.linearObjectList.fromPolyline(subGeom.asPolyline())
+                  self.linearObjectList.fromPolylineXY(subGeom.asPolyline())
                   # setto il n. di vertice
                   self.vertexAt = gripPoint.nVertex
                   
@@ -1585,7 +1576,7 @@ class QadGRIPINSERTREMOVEVERTEXCommandClass(QadCommandClass):
       # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
       geom = self.layerToMapCoordinates(layer, self.entity.getGeometry())
                
-      updSubGeom = QgsGeometry.fromPolyline(linearObjectList.asPolyline(tolerance2ApproxCurve))
+      updSubGeom = QgsGeometry.fromPolylineXY(linearObjectList.asPolyline(tolerance2ApproxCurve))
       updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom)
       if updGeom is None:
          return
@@ -1640,7 +1631,7 @@ class QadGRIPINSERTREMOVEVERTEXCommandClass(QadCommandClass):
       # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
       geom = self.layerToMapCoordinates(layer, self.entity.getGeometry())
 
-      updSubGeom = QgsGeometry.fromPolyline(linearObjectList.asPolyline(tolerance2ApproxCurve))
+      updSubGeom = QgsGeometry.fromPolylineXY(linearObjectList.asPolyline(tolerance2ApproxCurve))
       updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom)
       if updGeom is None:
          return
@@ -1701,7 +1692,7 @@ class QadGRIPINSERTREMOVEVERTEXCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
      
@@ -1764,7 +1755,7 @@ class QadGRIPINSERTREMOVEVERTEXCommandClass(QadCommandClass):
                self.waitForNewVertex()
             elif value == QadMsg.translate("Command_GRIP", "eXit") or value == "eXit":
                return True # fine comando
-         elif type(value) == QgsPoint:
+         elif type(value) == QgsPointXY:
             if ctrlKey:
                self.copyEntities = True
    
@@ -1803,7 +1794,7 @@ class QadGRIPINSERTREMOVEVERTEXCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito il punto base
+         if type(value) == QgsPointXY: # se é stato inserito il punto base
             self.basePt.set(value.x(), value.y())
             # imposto il map tool
             self.getPointMapTool().basePt = self.basePt
@@ -1831,7 +1822,7 @@ class QadGRIPARCLINECONVERTCommandClass(QadCommandClass):
       self.skipToNextGripCommand = False
       self.copyEntities = False
       self.nOperationsToUndo = 0
-      self.basePt = QgsPoint()
+      self.basePt = QgsPointXY()
 
       self.lineToArc = True
       self.partAt = 0
@@ -1880,7 +1871,7 @@ class QadGRIPARCLINECONVERTCommandClass(QadCommandClass):
                # setta: self.entity, self.linearObjectList, self.atSubGeom
                self.entity = entityGripPoints.entity
 
-               firstPt = QgsPoint(gripPoint.getPoint())
+               firstPt = QgsPointXY(gripPoint.getPoint())
                # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
                geom = self.layerToMapCoordinates(self.entity.layer, self.entity.getGeometry())
                # ritorna una tupla (<The squared cartesian distance>,
@@ -1891,7 +1882,7 @@ class QadGRIPARCLINECONVERTCommandClass(QadCommandClass):
                if dummy[2] is not None:
                   # ritorna la sotto-geometria al vertice <atVertex> e la sua posizione nella geometria (0-based)
                   subGeom, self.atSubGeom = qad_utils.getSubGeomAtVertex(geom, dummy[2])
-                  self.linearObjectList.fromPolyline(subGeom.asPolyline())
+                  self.linearObjectList.fromPolylineXY(subGeom.asPolyline())
                   # setto il n. della parte
                   self.partAt = gripPoint.nVertex
                   
@@ -1932,7 +1923,7 @@ class QadGRIPARCLINECONVERTCommandClass(QadCommandClass):
       # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
       geom = self.layerToMapCoordinates(layer, self.entity.getGeometry())
 
-      updSubGeom = QgsGeometry.fromPolyline(linearObjectList.asPolyline(tolerance2ApproxCurve))
+      updSubGeom = QgsGeometry.fromPolylineXY(linearObjectList.asPolyline(tolerance2ApproxCurve))
       updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom)
       if updGeom is None:
          return
@@ -1979,7 +1970,7 @@ class QadGRIPARCLINECONVERTCommandClass(QadCommandClass):
       # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
       geom = self.layerToMapCoordinates(layer, self.entity.getGeometry())
                
-      updSubGeom = QgsGeometry.fromPolyline(linearObjectList.asPolyline(tolerance2ApproxCurve))
+      updSubGeom = QgsGeometry.fromPolylineXY(linearObjectList.asPolyline(tolerance2ApproxCurve))
       updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom)
       if updGeom is None:
          return
@@ -2031,7 +2022,7 @@ class QadGRIPARCLINECONVERTCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
      
@@ -2091,7 +2082,7 @@ class QadGRIPARCLINECONVERTCommandClass(QadCommandClass):
                self.waitForConvertToArc()
             elif value == QadMsg.translate("Command_GRIP", "eXit") or value == "eXit":
                return True # fine comando
-         elif type(value) == QgsPoint:
+         elif type(value) == QgsPointXY:
             if ctrlKey:
                self.copyEntities = True
    

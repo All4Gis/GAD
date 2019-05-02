@@ -1,37 +1,28 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando SETVAR per settare le variabili di ambiente di QAD
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_variables import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_variables import *
 
 
 # Classe che gestisce il comando SETVAR
@@ -48,7 +39,7 @@ class QadSETVARCommandClass(QadCommandClass):
       return "SETVAR"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runSETVARCommand)
+      action.triggered.connect(self.plugIn.runSETVARCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/variable.png")
@@ -112,11 +103,14 @@ class QadSETVARCommandClass(QadCommandClass):
          if msgMapTool == True: # niente può arrivare da grafica
             return False
          # il valore della variabile arriva come parametro della funzione
-         QadVariables.set(self.varName, msg)
-         QadVariables.save()
-         self.plugIn.UpdatedVariablesEvent()
-         
-         return True
+         if QadVariables.set(self.varName, msg) == False: # valore non valido
+            msg = QadMsg.translate("Command_SETVAR", "\nValue not valid.")
+            self.showErr(msg)
+            return False
+         else: # valore valido
+            QadVariables.save()
+            self.plugIn.UpdatedVariablesEvent()
+            return True
       elif self.step == 3: # dopo aver atteso il nome della variabile si riavvia il comando
          if msgMapTool == True: # niente può arrivare da grafica
             return False

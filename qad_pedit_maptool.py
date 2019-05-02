@@ -1,43 +1,34 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire il map tool in ambito del comando pedit
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import math
 
 
-import qad_utils
-from qad_snapper import *
-from qad_variables import *
-from qad_getpoint import *
-from qad_rubberband import QadRubberBand
-from qad_highlight import QadHighlight
-from qad_dim import QadDimStyles
-from qad_msg import QadMsg
+from . import qad_utils
+from .qad_snapper import *
+from .qad_variables import *
+from .qad_getpoint import *
+from .qad_rubberband import QadRubberBand
+from .qad_highlight import QadHighlight
+from .qad_dim import QadDimStyles
+from .qad_msg import QadMsg
 
 
 #===============================================================================
@@ -111,7 +102,7 @@ class Qad_pedit_maptool(QadGetPoint):
       else:
          self.firstPt = self.linearObjectList.getLinearObjectAt(vertexAt).getStartPt()
       
-      self.vertexPt = QgsPoint(self.firstPt)
+      self.vertexPt = QgsPointXY(self.firstPt)
       self.vertexAt = vertexAt
       self.after = after      
     
@@ -127,9 +118,9 @@ class Qad_pedit_maptool(QadGetPoint):
          if self.basePt is not None:
             offSetX = self.tmpPoint.x() - self.basePt.x()
             offSetY = self.tmpPoint.y() - self.basePt.y()
-            newPt = QgsPoint(self.vertexPt.x() + offSetX, self.vertexPt.y() + offSetY)
+            newPt = QgsPointXY(self.vertexPt.x() + offSetX, self.vertexPt.y() + offSetY)
          else:
-            newPt = QgsPoint(self.tmpPoint)
+            newPt = QgsPointXY(self.tmpPoint)
             
          tmpLinearObjectList = qad_utils.QadLinearObjectList()
          tmpLinearObjectList.set(self.linearObjectList)
@@ -144,17 +135,17 @@ class Qad_pedit_maptool(QadGetPoint):
             else:
                tmpLinearObjectList.insertPoint(self.vertexAt - 1, newPt)
       elif self.mode == Qad_pedit_maptool_ModeEnum.ASK_FOR_MOVE_VERTEX:
-         newPt = QgsPoint(self.tmpPoint)
+         newPt = QgsPointXY(self.tmpPoint)
          tmpLinearObjectList = qad_utils.QadLinearObjectList()
          tmpLinearObjectList.set(self.linearObjectList)         
          tmpLinearObjectList.movePoint(self.vertexAt, newPt)
       
       if tmpLinearObjectList is not None:
          pts = tmpLinearObjectList.asPolyline(self.tolerance2ApproxCurve) 
-         if self.layer.geometryType() == QGis.Polygon:
-            geom = QgsGeometry.fromPolygon([pts])
+         if self.layer.geometryType() == QgsWkbTypes.PolygonGeometry:
+            geom = QgsGeometry.fromPolygonXY([pts])
          else:
-            geom = QgsGeometry.fromPolyline(pts)
+            geom = QgsGeometry.fromPolylineXY(pts)
             
          # trasformo la geometria nel crs del layer
          self.__highlight.addGeometry(self.mapToLayerCoordinates(self.layer, geom), self.layer)
@@ -181,7 +172,7 @@ class Qad_pedit_maptool(QadGetPoint):
          # solo layer lineari o poligono editabili che non appartengano a quote
          layerList = []
          for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
-            if (layer.geometryType() == QGis.Line or layer.geometryType() == QGis.Polygon) and \
+            if (layer.geometryType() == QgsWkbTypes.LineGeometry or layer.geometryType() == QgsWkbTypes.PolygonGeometry) and \
                layer.isEditable():
                if len(QadDimStyles.getDimListByLayer(layer)) == 0:
                   layerList.append(layer)
@@ -300,10 +291,10 @@ class Qad_gripLineToArcConvert_maptool(QadGetPoint):
       
       if ok:
          pts = self.linearObjectList.asPolyline(self.tolerance2ApproxCurve)
-         if self.layer.geometryType() == QGis.Polygon:
-            geom = QgsGeometry.fromPolygon([pts])
+         if self.layer.geometryType() == QgsWkbTypes.PolygonGeometry:
+            geom = QgsGeometry.fromPolygonXY([pts])
          else:
-            geom = QgsGeometry.fromPolyline(pts)
+            geom = QgsGeometry.fromPolylineXY(pts)
          # trasformo la geometria nel crs del layer
          self.__highlight.addGeometry(self.mapToLayerCoordinates(self.layer, geom), self.layer)
       

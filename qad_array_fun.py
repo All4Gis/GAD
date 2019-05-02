@@ -1,45 +1,37 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- funzioni per fare serie di oggetti grafici
- 
-                              -------------------
-        begin                : 2016-05-26
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import qgis.utils
 
 
-import qad_utils
-import qad_arc
-import qad_circle
-from qad_snapper import *
-import qad_layer
-from qad_highlight import QadHighlight
-from qad_entity import *
-from qad_dim import *
-import qad_label
+from . import qad_utils
+from . import qad_arc
+from . import qad_circle
+from .qad_snapper import *
+from . import qad_layer
+from .qad_highlight import QadHighlight
+from .qad_entity import *
+from .qad_dim import *
+from . import qad_label
 
 
 #===============================================================================
@@ -128,10 +120,10 @@ def arrayRectangleEntity(plugIn, ent, basePt, rows, cols, distanceBetweenRows, d
       f = ent.getFeature()
       # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
       CRS = qgis.utils.iface.mapCanvas().mapSettings().destinationCrs() # CRS corrente
-      coordTransform = QgsCoordinateTransform(ent.crs(), CRS)
+      coordTransform = QgsCoordinateTransform(ent.crs(), CRS,QgsProject.instance())
       g = f.geometry()
       g.transform(coordTransform)
-      coordTransform = QgsCoordinateTransform(CRS, ent.crs())
+      coordTransform = QgsCoordinateTransform(CRS, ent.crs(),QgsProject.instance())
    
       rotFldName = ""
       if ent.getEntityType() == QadEntityGeomTypeEnum.TEXT:
@@ -195,10 +187,10 @@ def arrayPathEntity(plugIn, ent, basePt, rows, cols, distanceBetweenRows, distan
       f = ent.getFeature()
       # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
       CRS = qgis.utils.iface.mapCanvas().mapSettings().destinationCrs() # CRS corrente
-      coordTransform = QgsCoordinateTransform(ent.crs(), CRS)
+      coordTransform = QgsCoordinateTransform(ent.crs(), CRS,QgsProject.instance())
       g = f.geometry()
       g.transform(coordTransform)
-      coordTransform = QgsCoordinateTransform(CRS, ent.crs())
+      coordTransform = QgsCoordinateTransform(CRS, ent.crs(),QgsProject.instance())
 
       rotFldName = ""
       if ent.getEntityType() == QadEntityGeomTypeEnum.TEXT:
@@ -262,10 +254,10 @@ def arrayPolarEntity(plugIn, ent, basePt, centerPt, itemsNumber, angleBetween, r
       f = ent.getFeature()
       # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
       CRS = qgis.utils.iface.mapCanvas().mapSettings().destinationCrs() # CRS corrente
-      coordTransform = QgsCoordinateTransform(ent.crs(), CRS)
+      coordTransform = QgsCoordinateTransform(ent.crs(), CRS,QgsProject.instance())
       g = f.geometry()
       g.transform(coordTransform)
-      coordTransform = QgsCoordinateTransform(CRS, ent.crs())
+      coordTransform = QgsCoordinateTransform(CRS, ent.crs(),QgsProject.instance())
 
       rotFldName = ""
       if ent.getEntityType() == QadEntityGeomTypeEnum.TEXT:

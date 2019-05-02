@@ -1,41 +1,33 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando SPEZZA per tagliare un oggetto 
- 
-                              -------------------
-        begin                : 2014-01-09
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 
 
-from qad_generic_cmd import QadCommandClass
-from qad_snapper import *
-from qad_getpoint import *
-from qad_textwindow import *
-from qad_entsel_cmd import QadEntSelClass
-from qad_msg import QadMsg
-import qad_layer
+from .qad_generic_cmd import QadCommandClass
+from .qad_snapper import *
+from .qad_getpoint import *
+from .qad_textwindow import *
+from .qad_entsel_cmd import QadEntSelClass
+from .qad_msg import QadMsg
+from . import qad_layer
 
 # Classe che gestisce il comando BREAK
 class QadBREAKCommandClass(QadCommandClass):
@@ -51,7 +43,7 @@ class QadBREAKCommandClass(QadCommandClass):
       return "BREAK"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runBREAKCommand)
+      action.triggered.connect(self.plugIn.runBREAKCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/break.png")
@@ -124,7 +116,7 @@ class QadBREAKCommandClass(QadCommandClass):
          line1 = result[0]
          line2 = result[1]
          atSubGeom = result[2]
-         if layer.geometryType() == QGis.Line:
+         if layer.geometryType() == QgsWkbTypes.LineString:
             if line1 is not None:
                updGeom = qad_utils.setSubGeom(g, line1, atSubGeom)
                if updGeom is None:
@@ -148,7 +140,7 @@ class QadBREAKCommandClass(QadCommandClass):
          else:
             # aggiungo le linee nei layer temporanei di QAD
             if LineTempLayer is None:
-               LineTempLayer = qad_layer.createQADTempLayer(self.plugIn, QGis.Line)
+               LineTempLayer = qad_layer.createQADTempLayer(self.plugIn, QgsWkbTypes.LineString)
                self.plugIn.addLayerToLastEditCommand("Feature broken", LineTempLayer)
             
             lineGeoms = []
@@ -183,7 +175,7 @@ class QadBREAKCommandClass(QadCommandClass):
 
        
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
       
@@ -245,7 +237,7 @@ class QadBREAKCommandClass(QadCommandClass):
             # si appresta ad attendere un punto
             self.waitForPoint(QadMsg.translate("Command_BREAK", "Specify first break point: "))            
             self.step = 3
-         elif type(value) == QgsPoint: # se é stato inserito il secondo punto
+         elif type(value) == QgsPointXY: # se é stato inserito il secondo punto
             self.secondPt = value
             self.plugIn.setLastPoint(self.secondPt)
             self.breakFeatures()            
@@ -276,7 +268,7 @@ class QadBREAKCommandClass(QadCommandClass):
          self.plugIn.setLastPoint(self.firstPt)
 
          # si appresta ad attendere un punto
-         self.waitForPoint(QadMsg.translate("Command_BREAK", "Specify second break point: "))            
+         self.waitForPoint(QadMsg.translate("Command_BREAK", "Specify second break point: "))
          self.step = 4
          
          return False

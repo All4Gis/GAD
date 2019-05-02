@@ -1,30 +1,22 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire in modalità cache le aree di un layer
- 
-                              -------------------
-        begin                : 2013-03-08
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 
@@ -128,12 +120,16 @@ class QadLayerCacheGeoms():
             continue
          newFeature.setAttribute(0, feature.id())
          newFeature.setGeometry(geom)
-         self.cacheLayer.addFeature(newFeature)
+         if self.cacheLayer.addFeature(newFeature) == False:
+            self.cacheLayer.rollBack()
+            return False
 
+      
       if self.cacheLayer.commitChanges():
          self.IsEmpty = False
          return True
       else:
+         self.cacheLayer.rollBack()
          return False
 
 
@@ -334,22 +330,18 @@ class QadLayerCacheGeomsDict():
       for layer in _layers: # ciclo sui layer
          # considero solo i layer vettoriali che sono filtrati per tipo
          if (layer.type() == QgsMapLayer.VectorLayer) and \
-             ((layer.geometryType() == QGis.Point and checkPointLayer == True) or \
-              (layer.geometryType() == QGis.Line and checkLineLayer == True) or \
-              (layer.geometryType() == QGis.Polygon and checkPolygonLayer == True)) and \
+             ((layer.geometryType() == QgsWkbTypes.PointGeometry and checkPointLayer == True) or \
+              (layer.geometryType() == QgsWkbTypes.LineGeometry and checkLineLayer == True) or \
+              (layer.geometryType() == QgsWkbTypes.PolygonGeometry and checkPolygonLayer == True)) and \
               (onlyEditableLayers == False or layer.isEditable()):                      
 
             # se il layer non è visibile a questa scala
             if layer.hasScaleBasedVisibility() and \
                (self.canvas.mapSettings().scale() < layer.minimumScale() or self.canvas.mapSettings().scale() > layer.maximumScale()):
                continue
-               
-            point1 = QgsPoint(boundBox.xMinimum(), boundBox.yMinimum())
-            point1 = self.canvas.mapSettings().mapToLayerCoordinates(layer, point1) # map to layer coordinate
-            point2 = QgsPoint(boundBox.xMaximum(), boundBox.yMaximum())
-            point2 = self.canvas.mapSettings().mapToLayerCoordinates(layer, point2) # map to layer coordinate
 
-            rect = QgsRectangle(point1, point2)
+            rect = self.canvas.mapSettings().mapToLayerCoordinates(layer, boundBox) # map to layer coordinate
+               
             self.refreshOnRectOnLayer(layer, rect)
 
 
@@ -427,17 +419,26 @@ def getFeatureRequest(rect, SubsetOfAttribute):
 #===============================================================================
 def getStrLayerGeomType(layer):
    wkbType = layer.wkbType()
-   if wkbType == QGis.WKBPoint:
+   # WKBPointM = 2001, WKBPointZM = 3001
+   if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ or wkbType == 2001 or wkbType == 3001:
       return "Point"
-   elif wkbType == QGis.WKBMultiPoint:
+   # WKBMultiPointM = 2004, WKBMultiPointZM = 3004
+   elif wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ or wkbType == 2004 or wkbType == 3004:
       return "MultiPoint"
-   elif wkbType == QGis.WKBLineString:
+   
+   # WKBLineStringM = 2002, WKBLineStringZM = 3002
+   elif wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ or wkbType == 2002 or wkbType == 3002:
       return "LineString"
-   elif wkbType == QGis.WKBMultiLineString:
+   # WKBMultiLineStringM = 2005, WKBMultiLineStringZM = 3005
+   elif wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ or wkbType == 2005 or wkbType == 3005:
       return "MultiLineString"
-   elif wkbType == QGis.WKBPolygon:
+   
+   # WKBPolygonM = 2003, WKBPolygonZM = 3003
+   elif wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ or wkbType == 2003 or wkbType == 3003:
       return "Polygon"
-   elif wkbType == QGis.WKBMultiPolygon:
+   # WKBMultiPolygonM = 2006, WKBMultiPolygonZM = 3006
+   elif wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ or wkbType == 2006 or wkbType == 3006:
       return "MultiPolygon"
 
-   
+   elif wkbType == QgsWkbTypes.NoGeometry:
+      return "NoGeometry"

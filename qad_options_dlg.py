@@ -1,44 +1,38 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- comando OPTIONS per opzioni di QAD
- 
-                              -------------------
-        begin                : 2016-10-02
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QDialog,QWidget,QDialogButtonBox
 from qgis.core import *
 from qgis.core import QgsApplication
 from qgis.utils import *
 
 
-import qad_options_ui
+from . import qad_options_ui
 
 
-from qad_variables import *
-from qad_msg import QadMsg, qadShowPluginHelp
-import qad_utils
-from qad_gripcolor_dlg import QadGripColorDialog
-from qad_windowcolor_dlg import QadColorContextEnum, QadColorElementEnum, QadWindowColorDialog
+from .qad_variables import *
+from .qad_msg import QadMsg, qadShowPluginHelp
+from . import qad_utils
+from .qad_gripcolor_dlg import QadGripColorDialog
+from .qad_windowcolor_dlg import QadColorContextEnum, QadColorElementEnum, QadWindowColorDialog
+from .qad_dsettings_dlg import QadTOOLTIPAPPEARANCEDialog
 
 
 #===============================================================================
@@ -213,39 +207,51 @@ class QadOPTIONSDialog(QDialog, QObject, qad_options_ui.Ui_Options_Dialog):
       
       
    def lineEdit_CMDINPUTHISTORYMAX_Validation(self):
-      return self.intLineEditWidgetValidation(self.lineEdit_CMDINPUTHISTORYMAX, \
-                                              QadMsg.translate("Environment variables", "CMDINPUTHISTORYMAX"), \
-                                              QadMsg.translate("Options_Dialog", "Invalid maximum command history length"))
+      varName = QadMsg.translate("Environment variables", "CMDINPUTHISTORYMAX")
+      var = self.tempQadVariables.getVariable(QadMsg.translate("Environment variables", varName))      
+      return qad_utils.intLineEditWidgetValidation(self.lineEdit_CMDINPUTHISTORYMAX, \
+                                                   var, \
+                                                   QadMsg.translate("Options_Dialog", "Invalid maximum command history length"))
 
 
    def lineEdit_INPUTSEARCHDELAY_Validation(self):
-      return self.intLineEditWidgetValidation(self.lineEdit_INPUTSEARCHDELAY, \
-                                              QadMsg.translate("Environment variables", "INPUTSEARCHDELAY"), \
-                                              QadMsg.translate("Options_Dialog", "Invalid delay time"))
+      varName = QadMsg.translate("Environment variables", "INPUTSEARCHDELAY")
+      var = self.tempQadVariables.getVariable(QadMsg.translate("Environment variables", varName))      
+      return qad_utils.intLineEditWidgetValidation(self.lineEdit_INPUTSEARCHDELAY, \
+                                                   var, \
+                                                   QadMsg.translate("Options_Dialog", "Invalid delay time"))
 
 
    def lineEdit_ARCMINSEGMENTQTY_Validation(self):
-      return self.intLineEditWidgetValidation(self.lineEdit_ARCMINSEGMENTQTY, \
-                                              QadMsg.translate("Environment variables", "ARCMINSEGMENTQTY"), \
-                                              QadMsg.translate("Options_Dialog", "Invalid minimum number of segments in an arc"))
+      varName = QadMsg.translate("Environment variables", "ARCMINSEGMENTQTY")
+      var = self.tempQadVariables.getVariable(QadMsg.translate("Environment variables", varName))      
+      return qad_utils.intLineEditWidgetValidation(self.lineEdit_ARCMINSEGMENTQTY, \
+                                                   var, \
+                                                   QadMsg.translate("Options_Dialog", "Invalid minimum number of segments in an arc"))
 
 
    def lineEdit_CIRCLEMINSEGMENTQTY_Validation(self):
-      return self.intLineEditWidgetValidation(self.lineEdit_CIRCLEMINSEGMENTQTY, \
-                                              QadMsg.translate("Environment variables", "CIRCLEMINSEGMENTQTY"), \
-                                              QadMsg.translate("Options_Dialog", "Invalid minimum number of segments in a circle"))
+      varName = QadMsg.translate("Environment variables", "CIRCLEMINSEGMENTQTY")
+      var = self.tempQadVariables.getVariable(QadMsg.translate("Environment variables", varName))
+      return qad_utils.intLineEditWidgetValidation(self.lineEdit_CIRCLEMINSEGMENTQTY, \
+                                                   var, \
+                                                   QadMsg.translate("Options_Dialog", "Invalid minimum number of segments in a circle"))
 
 
    def lineEdit_TOLERANCE2APPROXCURVE_Validation(self):
-      return self.floatLineEditWidgetValidation(self.lineEdit_TOLERANCE2APPROXCURVE, \
-                                                QadMsg.translate("Environment variables", "TOLERANCE2APPROXCURVE"), \
-                                                QadMsg.translate("Options_Dialog", "Invalid tolerance between real and segmented curve"))
+      varName = QadMsg.translate("Environment variables", "TOLERANCE2APPROXCURVE")
+      var = self.tempQadVariables.getVariable(QadMsg.translate("Environment variables", varName))
+      return qad_utils.floatLineEditWidgetValidation(self.lineEdit_TOLERANCE2APPROXCURVE, \
+                                                     var, \
+                                                     QadMsg.translate("Options_Dialog", "Invalid tolerance between real and segmented curve"))
 
 
    def lineEdit_CURSORSIZE_Validation(self):
-      return self.intLineEditWidgetValidation(self.lineEdit_CURSORSIZE, \
-                                              QadMsg.translate("Environment variables", "CURSORSIZE"), \
-                                              QadMsg.translate("Options_Dialog", "Invalid crosshair size"))
+      varName = QadMsg.translate("Environment variables", "CURSORSIZE")
+      var = self.tempQadVariables.getVariable(QadMsg.translate("Environment variables", varName))
+      return qad_utils.intLineEditWidgetValidation(self.lineEdit_CURSORSIZE, \
+                                                   var, \
+                                                   QadMsg.translate("Options_Dialog", "Invalid crosshair size"))
 
 
    def Button_TextWindowColor_clicked(self):
@@ -314,6 +320,15 @@ class QadOPTIONSDialog(QDialog, QObject, qad_options_ui.Ui_Options_Dialog):
       self.horizontalSlider_APERTURE.setValue(var.value)
 
 
+   def button_DraftingTooltipSettings_clicked(self):
+      Form = QadTOOLTIPAPPEARANCEDialog(self.plugIn, self)
+      if Form.exec_() == QDialog.Accepted:
+         # copio i valori dei colori in self.tempQadVariables
+         variables = Form.getSysVariableList()
+         for variable in variables:
+            self.tempQadVariables.set(variable.name, variable.value)
+      
+      
    def accept_drafting_tab(self):
       # AUTOSNAP
       autoSnap = self.tempQadVariables.get(QadMsg.translate("Environment variables", "AUTOSNAP"))
@@ -496,9 +511,11 @@ class QadOPTIONSDialog(QDialog, QObject, qad_options_ui.Ui_Options_Dialog):
 
 
    def lineEdit_GRIPOBJLIMIT_Validation(self):
-      return self.intLineEditWidgetValidation(self.lineEdit_GRIPOBJLIMIT, \
-                                              QadMsg.translate("Environment variables", "GRIPOBJLIMIT"), \
-                                              QadMsg.translate("Options_Dialog", "Invalid object selection limit for display of grips"))
+      varName = QadMsg.translate("Environment variables", "GRIPOBJLIMIT")
+      var = self.tempQadVariables.getVariable(QadMsg.translate("Environment variables", varName))
+      return qad_utils.intLineEditWidgetValidation(self.lineEdit_GRIPOBJLIMIT, \
+                                                   var, \
+                                                   QadMsg.translate("Options_Dialog", "Invalid object selection limit for display of grips"))
 
 
    def button_GripColor_clicked(self):
@@ -621,8 +638,7 @@ class QadOPTIONSDialog(QDialog, QObject, qad_options_ui.Ui_Options_Dialog):
 
    def ButtonBOX_Accepted(self):
       self.apply()
-      self.close()
-      return True
+      QDialog.accept(self)
 
 
    def ButtonBOX_Apply(self, button):

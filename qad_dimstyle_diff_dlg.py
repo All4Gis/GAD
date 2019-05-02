@@ -1,40 +1,33 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- classe per gestire la dialog per DIMSTYLE
- 
-                              -------------------
-        begin                : 2015-05-19
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QDialog
 from qgis.core import *
 from qgis.core import QgsApplication
 from qgis.utils import *
 
-import qad_dimstyle_diff_ui
+from . import qad_dimstyle_diff_ui
 
-from qad_dim import *
-from qad_msg import QadMsg, qadShowPluginHelp
-import qad_utils
+from .qad_dim import *
+from .qad_msg import QadMsg, qadShowPluginHelp
+from . import qad_utils
 
 
 #######################################################################################
@@ -201,15 +194,15 @@ class QadDIMSTYLE_DIFF_Dialog(QDialog, QObject, qad_dimstyle_diff_ui.Ui_DimStyle
       buffer = ""
       
       # intestazione
-      for col in xrange(0, self.tableWidget.columnCount(), 1):
+      for col in range(0, self.tableWidget.columnCount(), 1):
          if col > 0:
             buffer += '\t' # aggiungo un TAB
          buffer += self.tableWidget.horizontalHeaderItem(col).text()
       buffer += '\n' # vado a capo
       
       # valori delle righe
-      for row in xrange(0, self.tableWidget.rowCount(), 1):
-         for col in xrange(0, self.tableWidget.columnCount(), 1):
+      for row in range(0, self.tableWidget.rowCount(), 1):
+         for col in range(0, self.tableWidget.columnCount(), 1):
             if col > 0:
                buffer += '\t' # aggiungo un TAB
             buffer += self.tableWidget.item(row, col).text()

@@ -1,44 +1,36 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- comando MOVE per spostare oggetti
- 
-                              -------------------
-        begin                : 2013-09-27
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_move_maptool import *
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_getpoint import *
-from qad_textwindow import *
-from qad_ssget_cmd import QadSSGetClass
-from qad_entity import *
-import qad_utils
-import qad_layer
-from qad_dim import *
+from .qad_move_maptool import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_getpoint import *
+from .qad_textwindow import *
+from .qad_ssget_cmd import QadSSGetClass
+from .qad_entity import *
+from . import qad_utils
+from . import qad_layer
+from .qad_dim import *
 
 
 # Classe che gestisce il comando MOVE
@@ -55,7 +47,7 @@ class QadMOVECommandClass(QadCommandClass):
       return "MOVE"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runMOVECommand)
+      action.triggered.connect(self.plugIn.runMOVECommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/move.png")
@@ -69,7 +61,7 @@ class QadMOVECommandClass(QadCommandClass):
       self.SSGetClass = QadSSGetClass(plugIn)
       self.SSGetClass.onlyEditableLayers = True
       self.entitySet = QadEntitySet()
-      self.basePt = QgsPoint()
+      self.basePt = QgsPointXY()
 
    def __del__(self):
       QadCommandClass.__del__(self)
@@ -89,7 +81,7 @@ class QadMOVECommandClass(QadCommandClass):
 
    def getCurrentContextualMenu(self):
       if self.step == 0: # quando si é in fase di selezione entità
-         return self.SSGetClass.getCurrentContextualMenu()
+         return None # return self.SSGetClass.getCurrentContextualMenu()
       else:
          return self.contextualMenu
 
@@ -149,7 +141,7 @@ class QadMOVECommandClass(QadCommandClass):
       self.plugIn.endEditCommand()
 
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
             
@@ -219,7 +211,7 @@ class QadMOVECommandClass(QadCommandClass):
                          self.plugIn.lastOffsetPt, \
                          "", QadInputModeEnum.NONE)                                      
             self.step = 4           
-         elif type(value) == QgsPoint: # se é stato inserito il punto base
+         elif type(value) == QgsPointXY: # se é stato inserito il punto base
             self.basePt.set(value.x(), value.y())
 
             # imposto il map tool
@@ -256,9 +248,9 @@ class QadMOVECommandClass(QadCommandClass):
             value = msg
 
          if value is None:
-            newPt = QgsPoint(self.basePt.x() * 2, self.basePt.y() * 2)
+            newPt = QgsPointXY(self.basePt.x() * 2, self.basePt.y() * 2)
             self.moveGeoms(newPt)
-         elif type(value) == QgsPoint: # se é stato inserito lo spostamento con un punto
+         elif type(value) == QgsPointXY: # se é stato inserito lo spostamento con un punto
             self.moveGeoms(value)
             
          return True # fine comando
@@ -299,7 +291,7 @@ class QadGRIPMOVECommandClass(QadCommandClass):
    def __init__(self, plugIn):
       QadCommandClass.__init__(self, plugIn)
       self.entitySet = QadEntitySet()
-      self.basePt = QgsPoint()
+      self.basePt = QgsPointXY()
       self.skipToNextGripCommand = False
       self.copyEntities = False
       self.nOperationsToUndo = 0
@@ -451,7 +443,7 @@ class QadGRIPMOVECommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
      
@@ -506,7 +498,7 @@ class QadGRIPMOVECommandClass(QadCommandClass):
                self.waitForMovePoint()
             elif value == QadMsg.translate("Command_GRIPMOVE", "eXit") or value == "eXit":
                return True # fine comando
-         elif type(value) == QgsPoint: # se é stato selezionato un punto
+         elif type(value) == QgsPointXY: # se é stato selezionato un punto
             if ctrlKey:
                self.copyEntities = True
 
@@ -544,7 +536,7 @@ class QadGRIPMOVECommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito il punto base
+         if type(value) == QgsPointXY: # se é stato inserito il punto base
             self.basePt.set(value.x(), value.y())
             # imposto il map tool
             self.getPointMapTool().basePt = self.basePt

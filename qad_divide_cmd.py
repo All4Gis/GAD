@@ -1,44 +1,35 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando DIVIDE per creare oggetti puntuali a distanza uguale lungo il perimetro o la lunghezza di un oggetto
- 
-                              -------------------
-        begin                : 2016-09-09
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_getpoint import *
-from qad_entsel_cmd import QadEntSelClass
-from qad_textwindow import *
-from qad_entity import *
-from qad_variables import *
-import qad_utils
-import qad_layer
-from qad_dim import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_getpoint import *
+from .qad_entsel_cmd import QadEntSelClass
+from .qad_textwindow import *
+from .qad_entity import *
+from .qad_variables import *
+from . import qad_utils
+from . import qad_layer
+from .qad_dim import *
 
 
 #===============================================================================
@@ -65,7 +56,7 @@ class QadDIVIDECommandClass(QadCommandClass):
       return "DIVIDE"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runDIVIDECommand)
+      action.triggered.connect(self.plugIn.runDIVIDECommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/divide.png")
@@ -151,7 +142,7 @@ class QadDIVIDECommandClass(QadCommandClass):
       f = QgsFeature()
       f.setGeometry(g)
       # Add attribute fields to feature.
-      fields = layer.pendingFields()
+      fields = layer.fields()
       f.setFields(fields)
       
       # assegno i valori di default
@@ -198,7 +189,7 @@ class QadDIVIDECommandClass(QadCommandClass):
       subGeom, atSubGeom = qad_utils.getSubGeomAtVertex(geom, dummy[2])
       pathLinearObjectList = qad_utils.QadLinearObjectList()
       geomType = subGeom.type()
-      pathLinearObjectList.fromPolyline(subGeom.asPolyline())
+      pathLinearObjectList.fromPolylineXY(subGeom.asPolyline())
       distance = pathLinearObjectList.length() / self.nSegments
       
       self.plugIn.beginEditCommand("Feature divided", dstLayer)
@@ -217,11 +208,11 @@ class QadDIVIDECommandClass(QadCommandClass):
       return True
 
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
       
-      currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, QGis.Point)
+      currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, QgsWkbTypes.Point)
       if currLayer is None:
          self.showErr(errMsg)
          return True # fine comando

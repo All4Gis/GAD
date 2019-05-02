@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    GAD - Geographic Aided Design
+
+     begin      : May 05, 2019
+     copyright  : (c) 2019 by German Perez-Casanova Gomez
+     email      : icearqu@gmail.com
+
+
+    GAD  This program is free software and is distributed in
+    the hope that it will be useful, but without any warranty,
+    you can redistribute it and/or modify it under the terms
+    of version 3 of the GNU General Public License (GPL v3) as
+    published by the Free Software Foundation (www.gnu.org)
+-->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 297.3 297.3" style="enable-background:new 0 0 297.3 297.3;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:none;stroke:#323232;stroke-width:15;stroke-miterlimit:10;}
+	.st1{fill:#323232;stroke:#00A8D9;stroke-width:16;stroke-miterlimit:10;}
+	.st2{fill:#323232;stroke:#FF5069;stroke-width:16;stroke-miterlimit:10;}
+	.st3{fill:none;stroke:#323232;stroke-width:5;stroke-miterlimit:10;stroke-dasharray:12.3684,12.3684;}
+	.st4{fill:none;stroke:#00A8D9;stroke-width:13;stroke-miterlimit:10;}
+	.st5{fill:#00A8D9;stroke:#323232;stroke-width:6;stroke-miterlimit:10;}
+	.st6{fill:#FF5069;stroke:#323232;stroke-width:6;stroke-miterlimit:10;}
+</style>
+<ellipse class="st0" cx="148.7" cy="149.3" rx="140.7" ry="140.7"/>
+<line class="st1" x1="276" y1="8.5" x2="64" y2="8.7"/>
+<line class="st2" x1="8" y1="267" x2="8" y2="13.3"/>
+<line class="st3" x1="417.3" y1="241.2" x2="639.8" y2="241.2"/>
+<path class="st0" d="M417.3,239.5C379,157.3,412,65.4,478.4,33.1c49.7-24.2,114.1-13.1,161.4,28"/>
+<path class="st4" d="M-518-335"/>
+<ellipse transform="matrix(0.1602 -0.9871 0.9871 0.1602 510.2505 354.9535)" class="st5" cx="463.7" cy="-122.4" rx="37.4" ry="37.4"/>
+<line class="st1" x1="199" y1="297.3" x2="297.3" y2="203.1"/>
+<ellipse class="st6" cx="21.6" cy="145.1" rx="21.6" ry="21.6"/>
+<ellipse class="st5" cx="170.2" cy="20.4" rx="21.6" ry="21.6"/>
+<ellipse class="st5" cx="235" cy="243.9" rx="21.6" ry="21.6"/>
+</svg>

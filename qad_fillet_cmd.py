@@ -1,44 +1,34 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- comando FILLET per raccordare due oggetti grafici
- 
-                              -------------------
-        begin                : 2014-01-30
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
-
-
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 
 
-from qad_generic_cmd import QadCommandClass
-from qad_getdist_cmd import QadGetDistClass
-from qad_snapper import *
-from qad_fillet_maptool import *
-from qad_msg import QadMsg
-from qad_textwindow import *
-import qad_utils
-import qad_layer
-from qad_variables import *
-from qad_dim import QadDimStyles
+from .qad_generic_cmd import QadCommandClass
+from .qad_getdist_cmd import QadGetDistClass
+from .qad_snapper import *
+from .qad_fillet_maptool import *
+from .qad_msg import QadMsg
+from .qad_textwindow import *
+from . import qad_utils
+from . import qad_layer
+from .qad_variables import *
+from .qad_dim import QadDimStyles
 
 
 # Classe che gestisce il comando FILLET
@@ -55,7 +45,7 @@ class QadFILLETCommandClass(QadCommandClass):
       return "FILLET"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runFILLETCommand)
+      action.triggered.connect(self.plugIn.runFILLETCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/fillet.png")
@@ -144,7 +134,7 @@ class QadFILLETCommandClass(QadCommandClass):
          else:
             subGeom, self.atSubGeom2 = qad_utils.getSubGeomAtVertex(geom, dummy[2])
              
-         l.fromPolyline(subGeom.asPolyline())
+         l.fromPolylineXY(subGeom.asPolyline())
          e.selectOnLayer(False) # non incrementale        
          
          # la funzione ritorna una lista con (<minima distanza al quadrato>,
@@ -179,7 +169,7 @@ class QadFILLETCommandClass(QadCommandClass):
 
       self.linearObjectList1.fillet(self.radius)
                
-      updSubGeom = QgsGeometry.fromPolyline(self.linearObjectList1.asPolyline(tolerance2ApproxCurve))
+      updSubGeom = QgsGeometry.fromPolylineXY(self.linearObjectList1.asPolyline(tolerance2ApproxCurve))
       updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom1)
       if updGeom is None:
          return False
@@ -232,7 +222,7 @@ class QadFILLETCommandClass(QadCommandClass):
          f = self.entity1.getFeature()
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
          geom = self.layerToMapCoordinates(self.entity1.layer, f.geometry())
-         updSubGeom = QgsGeometry.fromPolyline(filletLinearObjectList.asPolyline(tolerance2ApproxCurve))
+         updSubGeom = QgsGeometry.fromPolylineXY(filletLinearObjectList.asPolyline(tolerance2ApproxCurve))
          updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom1)
          if updGeom is None:
             self.plugIn.destroyEditCommand()
@@ -259,7 +249,7 @@ class QadFILLETCommandClass(QadCommandClass):
          f = self.entity2.getFeature()
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
          geom = self.layerToMapCoordinates(self.entity2.layer, f.geometry())
-         updSubGeom = QgsGeometry.fromPolyline(filletLinearObjectList.asPolyline(tolerance2ApproxCurve))
+         updSubGeom = QgsGeometry.fromPolylineXY(filletLinearObjectList.asPolyline(tolerance2ApproxCurve))
          updGeom = qad_utils.setSubGeom(geom, updSubGeom, self.atSubGeom2)
          if updGeom is None:
             self.plugIn.destroyEditCommand()
@@ -281,7 +271,7 @@ class QadFILLETCommandClass(QadCommandClass):
                return False
 
       if whatToDoPoly1 == 0 and whatToDoPoly2 == 0: # 0=niente      
-         geom = QgsGeometry.fromPolyline(filletLinearObjectList.asPolyline(tolerance2ApproxCurve))
+         geom = QgsGeometry.fromPolylineXY(filletLinearObjectList.asPolyline(tolerance2ApproxCurve))
          # trasformo la geometria nel crs del layer
          geom = self.mapToLayerCoordinates(self.entity1.layer, geom)
 
@@ -398,7 +388,7 @@ class QadFILLETCommandClass(QadCommandClass):
 
         
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
       
@@ -462,7 +452,7 @@ class QadFILLETCommandClass(QadCommandClass):
                self.multi = True
                self.waitForFirstEntSel() # si appresta ad attendere la selezione del primo oggetto
                            
-         elif type(value) == QgsPoint: # se é stato selezionato un punto
+         elif type(value) == QgsPointXY: # se é stato selezionato un punto
             self.entity1.clear()
             self.linearObjectList1.removeAll()            
             if self.getPointMapTool().entity.isInitialized():
@@ -475,7 +465,7 @@ class QadFILLETCommandClass(QadCommandClass):
                # solo layer lineari o poligono editabili che non appartengano a quote
                layerList = []
                for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
-                  if (layer.geometryType() == QGis.Line or layer.geometryType() == QGis.Polygon) and \
+                  if (layer.geometryType() == QgsWkbTypes.LineGeometry or layer.geometryType() == QgsWkbTypes.PolygonGeometry) and \
                      layer.isEditable():
                      if len(QadDimStyles.getDimListByLayer(layer)) == 0:
                         layerList.append(layer)
@@ -526,7 +516,7 @@ class QadFILLETCommandClass(QadCommandClass):
                self.step = 5
                self.GetDistClass.run(msgMapTool, msg)                           
                return False
-         elif type(value) == QgsPoint: # se é stato selezionato un punto
+         elif type(value) == QgsPointXY: # se é stato selezionato un punto
             self.entity1.clear()
             self.linearObjectList1.removeAll()            
             if self.getPointMapTool().entity.isInitialized():
@@ -542,7 +532,7 @@ class QadFILLETCommandClass(QadCommandClass):
                # solo layer lineari o poligono editabili che non appartengano a quote
                layerList = []
                for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
-                  if (layer.geometryType() == QGis.Line or layer.geometryType() == QGis.Polygon) and \
+                  if (layer.geometryType() == QgsWkbTypes.LineGeometry or layer.geometryType() == QgsWkbTypes.PolygonGeometry) and \
                      layer.isEditable():
                      if len(QadDimStyles.getDimListByLayer(layer)) == 0:
                         layerList.append(layer)
@@ -651,7 +641,7 @@ class QadFILLETCommandClass(QadCommandClass):
                self.GetDistClass.run(msgMapTool, msg)
                return False
                            
-         elif type(value) == QgsPoint: # se é stato selezionato un punto
+         elif type(value) == QgsPointXY: # se é stato selezionato un punto
             self.entity2.clear()
             self.linearObjectList2.removeAll()            
 
@@ -683,7 +673,7 @@ class QadFILLETCommandClass(QadCommandClass):
                # solo layer lineari o poligono editabili che non appartengano a quote
                layerList = []
                for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
-                  if (layer.geometryType() == QGis.Line or layer.geometryType() == QGis.Polygon) and \
+                  if (layer.geometryType() == QgsWkbTypes.LineGeometry or layer.geometryType() == QgsWkbTypes.PolygonGeometry) and \
                      layer.isEditable():
                      if len(QadDimStyles.getDimListByLayer(layer)) == 0:
                         layerList.append(layer)

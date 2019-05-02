@@ -1,41 +1,32 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando da inserire in altri comandi per la selezione di una feature
- 
-                              -------------------
-        begin                : 2013-09-18
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_textwindow import *
-from qad_entity import *
-from qad_getpoint import *
-import qad_utils
-from qad_dim import QadDimStyles
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_textwindow import *
+from .qad_entity import *
+from .qad_getpoint import *
+from . import qad_utils
+from .qad_dim import QadDimStyles
 
 
 #===============================================================================
@@ -96,9 +87,9 @@ class QadEntSelClass(QadCommandClass):
       layerList = []
       for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
          # considero solo i layer vettoriali che sono filtrati per tipo
-         if ((layer.geometryType() == QGis.Point and self.checkPointLayer == True) or \
-             (layer.geometryType() == QGis.Line and self.checkLineLayer == True) or \
-             (layer.geometryType() == QGis.Polygon and self.checkPolygonLayer == True)) and \
+         if ((layer.geometryType() == QgsWkbTypes.PointGeometry and self.checkPointLayer == True) or \
+             (layer.geometryType() == QgsWkbTypes.LineGeometry and self.checkLineLayer == True) or \
+             (layer.geometryType() == QgsWkbTypes.PolygonGeometry and self.checkPolygonLayer == True)) and \
              (self.onlyEditableLayers == False or layer.isEditable()):
             # se devo includere i layers delle quotature
             if self.checkDimLayers == True or \
@@ -109,7 +100,7 @@ class QadEntSelClass(QadCommandClass):
 
             
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
 
@@ -170,13 +161,13 @@ class QadEntSelClass(QadCommandClass):
                   # controllo sul layer
                   if self.onlyEditableLayers == False or lastEnt.layer.isEditable() == True:
                      # controllo sul tipo
-                     if (self.checkPointLayer == True and lastEnt.layer.geometryType() == QGis.Point) or \
-                        (self.checkLineLayer == True and lastEnt.layer.geometryType() == QGis.Line) or \
-                        (self.checkPolygonLayer == True and lastEnt.layer.geometryType() == QGis.Polygon):
+                     if (self.checkPointLayer == True and lastEnt.layer.geometryType() == QgsWkbTypes.PointGeometry) or \
+                        (self.checkLineLayer == True and lastEnt.layer.geometryType() == QgsWkbTypes.LineGeometry) or \
+                        (self.checkPolygonLayer == True and lastEnt.layer.geometryType() == QgsWkbTypes.PolygonGeometry):
                         # controllo su layer delle quotature
                         if self.checkDimLayers == True or lastEnt.isDimensionComponent() == False:
                            self.setEntity(lastEnt.layer, lastEnt.featureId)
-         elif type(value) == QgsPoint:
+         elif type(value) == QgsPointXY:
             if entity is None:
                # cerco se ci sono entità nel punto indicato
                result = qad_utils.getEntSel(self.getPointMapTool().toCanvasCoordinates(value),

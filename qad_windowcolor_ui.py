@@ -2,12 +2,12 @@
 
 # Form implementation generated from reading ui file 'qad_windowcolor.ui'
 #
-# Created: Wed Oct 12 11:24:06 2016
+# Created: Mon May 14 11:26:29 2018
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -36,7 +36,7 @@ class Ui_WindowColor_Dialog(object):
         self.Button_Help.setGeometry(QtCore.QRect(510, 390, 75, 23))
         self.Button_Help.setObjectName(_fromUtf8("Button_Help"))
         self.Button_ApplyClose = QtGui.QPushButton(WindowColor_Dialog)
-        self.Button_ApplyClose.setGeometry(QtCore.QRect(334, 390, 91, 23))
+        self.Button_ApplyClose.setGeometry(QtCore.QRect(304, 390, 121, 23))
         self.Button_ApplyClose.setObjectName(_fromUtf8("Button_ApplyClose"))
         self.label = QtGui.QLabel(WindowColor_Dialog)
         self.label.setGeometry(QtCore.QRect(10, 10, 161, 16))
@@ -74,16 +74,16 @@ class Ui_WindowColor_Dialog(object):
         self.label_4.setObjectName(_fromUtf8("label_4"))
 
         self.retranslateUi(WindowColor_Dialog)
-        QtCore.QObject.connect(self.Button_ApplyClose, QtCore.SIGNAL(_fromUtf8("clicked()")), WindowColor_Dialog.Button_ApplyClose_Pressed)
         QtCore.QObject.connect(self.Button_Cancel, QtCore.SIGNAL(_fromUtf8("clicked()")), WindowColor_Dialog.Button_Cancel_Pressed)
         QtCore.QObject.connect(self.Button_Help, QtCore.SIGNAL(_fromUtf8("clicked()")), WindowColor_Dialog.ButtonHELP_Pressed)
         QtCore.QObject.connect(self.Button_RestoreCurrElement, QtCore.SIGNAL(_fromUtf8("clicked()")), WindowColor_Dialog.Button_RestoreCurrElement_clicked)
         QtCore.QObject.connect(self.Button_RestoreCurrContext, QtCore.SIGNAL(_fromUtf8("clicked()")), WindowColor_Dialog.Button_RestoreCurrContext_clicked)
         QtCore.QObject.connect(self.Button_RestoreAllContext, QtCore.SIGNAL(_fromUtf8("clicked()")), WindowColor_Dialog.Button_RestoreAllContext_clicked)
+        QtCore.QObject.connect(self.Button_ApplyClose, QtCore.SIGNAL(_fromUtf8("clicked()")), WindowColor_Dialog.Button_ApplyClose_Pressed)
         QtCore.QMetaObject.connectSlotsByName(WindowColor_Dialog)
 
     def retranslateUi(self, WindowColor_Dialog):
-        WindowColor_Dialog.setWindowTitle(_translate("WindowColor_Dialog", "Drawing window Colors", None))
+        WindowColor_Dialog.setWindowTitle(_translate("WindowColor_Dialog", "QAD - Drawing window Colors", None))
         self.Button_Cancel.setText(_translate("WindowColor_Dialog", "Cancel", None))
         self.Button_Help.setText(_translate("WindowColor_Dialog", "Help", None))
         self.Button_ApplyClose.setText(_translate("WindowColor_Dialog", "Apply && Close", None))

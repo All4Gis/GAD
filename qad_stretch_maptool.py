@@ -1,44 +1,36 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire il map tool in ambito del comando stretch
- 
-                              -------------------
-        begin                : 2014-01-08
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import math
 
 
-import qad_utils
-from qad_snapper import *
-from qad_snappointsdisplaymanager import *
-from qad_variables import *
-from qad_getpoint import *
-from qad_dim import *
-import qad_stretch_fun
-from qad_highlight import QadHighlight
-from qad_msg import QadMsg
+from . import qad_utils
+from .qad_snapper import *
+from .qad_snappointsdisplaymanager import *
+from .qad_variables import *
+from .qad_getpoint import *
+from .qad_dim import *
+from . import qad_stretch_fun
+from .qad_highlight import QadHighlight
+from .qad_msg import QadMsg
 
 
 #===============================================================================
@@ -96,7 +88,7 @@ class Qad_stretch_maptool(QadGetPoint):
          if stretchedGeom is None: # se non c'è lo salto senza errore
             return True
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
-         coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.canvas.mapSettings().destinationCrs())
+         coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.canvas.mapSettings().destinationCrs(),QgsProject.instance())
          stretchedGeom.transform(coordTransform)           
          # stiro la feature
          stretchedGeom = qad_stretch_fun.stretchQgsGeometry(stretchedGeom, containerGeom, \
@@ -105,7 +97,7 @@ class Qad_stretch_maptool(QadGetPoint):
          
          if stretchedGeom is not None:
             # trasformo la geometria nel crs del layer
-            coordTransform = QgsCoordinateTransform(self.canvas.mapSettings().destinationCrs(), entity.layer.crs())
+            coordTransform = QgsCoordinateTransform(self.canvas.mapSettings().destinationCrs(), entity.layer.crs(),QgsProject.instance())
             stretchedGeom.transform(coordTransform)
             self.__highlight.addGeometry(stretchedGeom, entity.layer)
 
@@ -209,6 +201,8 @@ class Qad_gripStretch_maptool(QadGetPoint):
       self.basePt = None
       self.selectedEntityGripPoints = [] # lista in cui ogni elemento è una entità + una lista di punti da stirare
       self.__highlight = QadHighlight(self.canvas)
+      self.prevPart = None # per input dinamico
+      self.nextPart = None # per input dinamico
 
    def hidePointMapToolMarkers(self):
       QadGetPoint.hidePointMapToolMarkers(self)
@@ -255,6 +249,7 @@ class Qad_gripStretch_maptool(QadGetPoint):
 
          if stretchedGeom is not None:
             self.__highlight.addGeometry(stretchedGeom, entity.layer)
+         return stretchedGeom
       elif entity.whatIs() == "DIMENTITY":
          # stiro la quota
          entity.stretch(ptList, offSetX, offSetY)
@@ -282,7 +277,8 @@ class Qad_gripStretch_maptool(QadGetPoint):
 
          # verifico se l'entità appartiene ad uno stile di quotatura
          if entity.isDimensionComponent() == False:
-            self.stretch(entity, ptList, offSetX, offSetY, tolerance2ApproxCurve)
+            stretchedGeom = self.stretch(entity, ptList, offSetX, offSetY, tolerance2ApproxCurve)
+            arc1 = QadArc()
          else:
             dimEntity = QadDimEntity()
             if dimEntity.initByDimId(entity.dimStyle, entity.dimId):
@@ -332,8 +328,18 @@ class Qad_gripStretch_maptool(QadGetPoint):
       if self.mode == Qad_stretch_maptool_ModeEnum.NONE_KNOWN_ASK_FOR_BASE_PT:
          self.setSelectionMode(QadGetPointSelectionModeEnum.POINT_SELECTION)
          self.setDrawMode(QadGetPointDrawModeEnum.NONE)
-         self.__highlight.reset()         
+         self.__highlight.reset()
+         self.prevPart = None
+         self.nextPart = None
+         self.getDynamicInput().setPrevPoint(None)
+         self.getDynamicInput().setPrevPart(self.prevPart)
+         self.getDynamicInput().setNextPart(self.nextPart)
+
       # noto il punto base si richiede il secondo punto
       elif self.mode == Qad_stretch_maptool_ModeEnum.BASE_PT_KNOWN_ASK_FOR_MOVE_PT:
          self.setDrawMode(QadGetPointDrawModeEnum.ELASTIC_LINE)
          self.setStartPoint(self.basePt)
+         self.getDynamicInput().setPrevPart(self.prevPart)
+         self.getDynamicInput().setNextPart(self.nextPart)
+         if self.prevPart is not None or self.nextPart is not None:
+            self.getDynamicInput().setPrevPoint(None)

@@ -1,42 +1,30 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- comando SETCURRLAYERBYGRAPH per settare il layer corrente tramite selezione grafica
- comando SETCURRUPDATEABLELAYERBYGRAPH per settare il layer corrente e porlo in modifica 
-                                       tramite selezione grafica
- 
-                              ------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
-
-
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 
 
-from qad_generic_cmd import QadCommandClass
-from qad_snapper import *
-from qad_getpoint import *
-from qad_entsel_cmd import QadEntSelClass
-from qad_ssget_cmd import QadSSGetClass
-from qad_msg import QadMsg
+from .qad_generic_cmd import QadCommandClass
+from .qad_snapper import *
+from .qad_getpoint import *
+from .qad_entsel_cmd import QadEntSelClass
+from .qad_ssget_cmd import QadSSGetClass
+from .qad_msg import QadMsg
 
 
 # Classe che gestisce il comando SETCURRLAYERBYGRAPH
@@ -53,10 +41,10 @@ class QadSETCURRLAYERBYGRAPHCommandClass(QadCommandClass):
       return "SETCURRLAYERBYGRAPH"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runSETCURRLAYERBYGRAPHCommand)
+      action.triggered.connect( self.plugIn.runSETCURRLAYERBYGRAPHCommand)
 
    def getIcon(self):
-      return QIcon(":/plugins/qad/icons/setcurrlayerbygraph.png")
+      return QIcon(":/plugins/qad/icons/setcurrlayerbygraph.svg")
    
    def getNote(self):
       # impostare le note esplicative del comando      
@@ -96,7 +84,7 @@ class QadSETCURRLAYERBYGRAPHCommandClass(QadCommandClass):
       self.entSelClass.run(msgMapTool, msg)
         
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
       
@@ -113,7 +101,7 @@ class QadSETCURRLAYERBYGRAPHCommandClass(QadCommandClass):
                   self.plugIn.canvas.currentLayer() != layer:                              
                   self.plugIn.canvas.setCurrentLayer(layer)
                   self.plugIn.iface.setActiveLayer(layer) # lancia evento di deactivate e activate dei plugin
-                  self.plugIn.iface.legendInterface().refreshLayerSymbology(layer)
+                  self.plugIn.iface.layerTreeView().refreshLayerSymbology(layer.id())
                   msg = QadMsg.translate("Command_SETCURRLAYERBYGRAPH", "\nThe current layer is {0}.")
                   self.showMsg(msg.format(layer.name()))
                del self.entSelClass
@@ -141,10 +129,10 @@ class QadSETCURRUPDATEABLELAYERBYGRAPHCommandClass(QadCommandClass):
       return "SETCURRUPDATEABLELAYERBYGRAPH"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runSETCURRUPDATEABLELAYERBYGRAPHCommand)
+      action.triggered.connect(self.plugIn.runSETCURRUPDATEABLELAYERBYGRAPHCommand)
 
    def getIcon(self):
-      return QIcon(":/plugins/qad/icons/setcurrupdateablelayerbygraph.png")
+      return QIcon(":/plugins/qad/icons/setcurrupdateablelayerbygraph.svg")
    
    def getNote(self):
       # impostare le note esplicative del comando      
@@ -168,7 +156,7 @@ class QadSETCURRUPDATEABLELAYERBYGRAPHCommandClass(QadCommandClass):
 
    def getCurrentContextualMenu(self):
       if self.step == 0 or self.step == 1: # quando si é in fase di selezione entità
-         return self.SSGetClass.getCurrentContextualMenu()
+         return None # return self.SSGetClass.getCurrentContextualMenu()
       else:
          return self.contextualMenu
 
@@ -192,7 +180,7 @@ class QadSETCURRUPDATEABLELAYERBYGRAPHCommandClass(QadCommandClass):
             layer = layerEntitySet.layer       
             if layer.isEditable() == False:
                if layer.startEditing() == True:
-                  self.plugIn.iface.legendInterface().refreshLayerSymbology(layer)
+                  self.plugIn.iface.layerTreeView().refreshLayerSymbology(layer.id())
                   self.showMsg(QadMsg.translate("Command_SETCURRUPDATEABLELAYERBYGRAPH", "\nThe layer {0} is editable.").format(layer.name()))
 
          if len(self.SSGetClass.entitySet.layerEntitySetList) == 1:
@@ -201,7 +189,7 @@ class QadSETCURRUPDATEABLELAYERBYGRAPHCommandClass(QadCommandClass):
                self.plugIn.canvas.currentLayer() != layer:               
                self.plugIn.canvas.setCurrentLayer(layer)
                self.plugIn.iface.setActiveLayer(layer) # lancia evento di deactivate e activate dei plugin
-               self.plugIn.iface.legendInterface().refreshLayerSymbology(layer)
+               self.plugIn.iface.layerTreeView().refreshLayerSymbology(layer.id())
                self.showMsg(QadMsg.translate("Command_SETCURRUPDATEABLELAYERBYGRAPH", "\nThe current layer is {0}.").format(layer.name()))
          
          return True

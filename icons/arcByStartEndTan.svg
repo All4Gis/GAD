@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    GAD - Geographic Aided Design
+
+     begin      : May 05, 2019
+     copyright  : (c) 2019 by German Perez-Casanova Gomez
+     email      : icearqu@gmail.com
+
+
+    GAD  This program is free software and is distributed in
+    the hope that it will be useful, but without any warranty,
+    you can redistribute it and/or modify it under the terms
+    of version 3 of the GNU General Public License (GPL v3) as
+    published by the Free Software Foundation (www.gnu.org)
+-->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 297.3 297.3" style="enable-background:new 0 0 297.3 297.3;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:none;stroke:#00A8D9;stroke-width:15;stroke-miterlimit:10;stroke-dasharray:12.368,12.3684;}
+	.st1{fill:none;stroke:#323232;stroke-width:15;stroke-miterlimit:10;}
+	.st2{fill:none;stroke:#00A8D9;stroke-width:13;stroke-miterlimit:10;}
+	.st3{fill:#FF5069;stroke:#323232;stroke-width:6;stroke-miterlimit:10;}
+	.st4{fill:#00A8D9;stroke:#323232;stroke-width:6;stroke-miterlimit:10;}
+	.st5{fill:none;stroke:#00A8D9;stroke-width:19;stroke-miterlimit:10;}
+</style>
+<line class="st0" x1="11.5" y1="243.8" x2="14.8" y2="6"/>
+<path class="st1" d="M37.4,251.9C-0.9,169.7,32.1,77.8,98.5,45.5c49.7-24.2,114.1-13.1,161.4,28"/>
+<path class="st2" d="M-518-335"/>
+<ellipse transform="matrix(0.1602 -0.9871 0.9871 0.1602 -217.1719 248.4381)" class="st3" cx="37.4" cy="251.8" rx="37.4" ry="37.4"/>
+<ellipse transform="matrix(0.1602 -0.9871 0.9871 0.1602 145.7139 318.2689)" class="st4" cx="259.9" cy="73.5" rx="37.4" ry="37.4"/>
+<path class="st5" d="M232.4,234.6"/>
+</svg>

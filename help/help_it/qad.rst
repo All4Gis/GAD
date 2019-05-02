@@ -266,6 +266,17 @@ La sintassi della latitudine e della longitudine è la seguente:
      le coppie di valori: 37.7 N 122.2 W oppure 37.7 N,122.2 W oppure
      37.7 N/122.2 W
 
+INPUT DINAMICO
+--------------
+
+Con il tasto F12 si attiva/disattiva la modalità di input dinamico.
+Visualizza un'interfaccia di comando in corrispondenza del cursore, che
+è possibile utilizzare per immettere i comandi e specificare le opzioni
+e i valori.
+
+Per modificare la configurazione di input dinamico vedere il comando
+IMPOSTADIS.
+
 Selezione degli oggetti
 -----------------------
 
@@ -574,10 +585,14 @@ Campi opzionali:
      lineare che compone la quota secondo il seguente schema:
    | "D1" = linea di quota 1 ("Dimension line 1")
    | "D2" = linea di quota 2 ("Dimension line 2")
+   | “X1” = estensione della linea di quota 1
+   | “X2” = estensione della linea di quota 2
    | "E1" = prima linea di estensione ("Extension line 1")
    | "E2" = seconda linea di estensione ("Extension line 2")
    | "L" = linea porta quota usata quando il testo é fuori dalla quota
      ("Leader")
+   | “CL” = Linea che definisce il marcatore del centro di un arco o di
+     un cerchio
    | (necessario se si desidera usare le funzioni di modifica di una
      quota esistente)
 
@@ -641,9 +656,9 @@ Impostazioni opzionali:
 -  Il tipolinea può essere letto da un campo carattere che memorizza il
    tipolinea delle linee della quota
 
-I comandi di quotatura (DIMLINEARE, DIMALLINEATA) fanno riferimento allo
-stile di quotatura corrente. Per impostare lo stile di quotatura
-corrente lanciare il comando DIMSTILE.
+I comandi di quotatura fanno riferimento allo stile di quotatura
+corrente. Per impostare lo stile di quotatura corrente lanciare il
+comando DIMSTILE.
 
 Personalizzazione dei comandi
 -----------------------------
@@ -732,6 +747,11 @@ DIMLINEARE
 ~~~~~~~~~~
 
 Disegna una quota lineare.
+
+DIMRAGGIO
+~~~~~~~~~
+
+Disegna una quota radiale.
 
 DIMSTILE
 ~~~~~~~~
@@ -1132,7 +1152,78 @@ DELOBJ
 DIMSTYLE
 ~~~~~~~~
 
-Come i CAD più popolari. Variabile di progetto.
+Come i CAD più popolari. Variabile globale.
+
+DYNDIGRIP
+~~~~~~~~~
+
+| Controlla la visualizzazione delle quote dinamiche. Variabile globale.
+| 0 = Nessuno.
+| 1 = Quota risultante.
+| 2 = Quota Modifica lunghezza.
+| 4 = Quota Angolo assoluto.
+| 8 = Quota Modifica angolo.
+
+DYNDIVIS
+~~~~~~~~
+
+Come i CAD più popolari. Variabile globale.
+
+DYNEDITFORECOLOR
+~~~~~~~~~~~~~~~~
+
+Imposta il colore (RGB) del testo della finestra di input dinamico.
+Variabile globale.
+
+DYNEDITBACKCOLOR
+~~~~~~~~~~~~~~~~
+
+Imposta il colore (RGB) dello sfondo della finestra di input dinamico.
+Variabile globale.
+
+DYNEDITBORDERCOLOR
+~~~~~~~~~~~~~~~~~~
+
+Imposta il colore (RGB) del bordo della finestra di input dinamico.
+Variabile globale.
+
+DYNMODE
+~~~~~~~
+
+Come i CAD più popolari. Variabile globale.
+
+DYNPICOORDS
+~~~~~~~~~~~
+
+Come i CAD più popolari. Variabile globale.
+
+DYNPIFORMAT
+~~~~~~~~~~~
+
+Come i CAD più popolari. Variabile globale.
+
+DYNPIVIS
+~~~~~~~~
+
+| Controlla quando è visualizzato l'input puntatore. Variabile globale.
+| 1 = Automaticamente ad un messaggio di richiesta di un punto
+| 2 = Sempre
+
+DYNPROMPT
+~~~~~~~~~
+
+Come i CAD più popolari. Variabile globale.
+
+DYNTOOLTIPS
+~~~~~~~~~~~
+
+Come i CAD più popolari. Variabile globale.
+
+DYNTRECKINGVECTORCOLOR
+~~~~~~~~~~~~~~~~~~~~~~
+
+Imposta il colore (RGB) del vettore track per l'imput dinamico (linee di
+estensione). Variabile globale.
 
 EDGEMODE
 ~~~~~~~~
@@ -1290,6 +1381,18 @@ TOLERANCE2APPROXCURVE
 Massimo errore tollerato tra una vera curva e quella approssimata dai
 segmenti retti. Valori validi da 0.000001, tipo reale, valore
 predefinito 0.1. Variabile di progetto.
+
+TOOLTIPTRANSPARENCY
+~~~~~~~~~~~~~~~~~~~
+
+Imposta la trasparenza della finestra di input dinamico. Valoro validi
+da 0 a 100. Variabile globale.
+
+TOOLTIPSIZE
+~~~~~~~~~~~
+
+Dimensione del testo di tooltip. Valori validi da -3 a 6. Variabile
+globale.
 
 WINDOWAREACOLOR
 ~~~~~~~~~~~~~~~

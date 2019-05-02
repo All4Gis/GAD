@@ -1,45 +1,35 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comandi per generare le quotature
- 
-                              -------------------
-        begin                : 2014-02-19
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
-
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_dim import *
-from qad_dim_maptool import *
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_getpoint import *
-from qad_textwindow import *
-from qad_entsel_cmd import QadEntSelClass
-from qad_getangle_cmd import QadGetAngleClass
-from qad_variables import *
-import qad_utils
-import qad_layer
+from .qad_dim import *
+from .qad_dim_maptool import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_getpoint import *
+from .qad_textwindow import *
+from .qad_entsel_cmd import QadEntSelClass
+from .qad_getangle_cmd import QadGetAngleClass
+from .qad_variables import *
+from . import qad_utils
+from . import qad_layer
 
 
 #============================================================================
@@ -56,7 +46,7 @@ def getStartEndPointClosestPartWithContext(entity, point, destCrs):
    geom = entity.getGeometry()
 
    # trasformo la geometria in screen coordinate
-   coordTransform = QgsCoordinateTransform(entity.layer.crs(), destCrs) # trasformo la geometria
+   coordTransform = QgsCoordinateTransform(entity.layer.crs(), destCrs,QgsProject.instance()) # trasformo la geometria
    geom.transform(coordTransform)         
 
    return qad_utils.whatGeomIs(point, geom)
@@ -81,7 +71,7 @@ class QadDIMLINEARCommandClass(QadCommandClass):
       return "DIMLINEAR"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runDIMLINEARCommand)
+      action.triggered.connect(self.plugIn.runDIMLINEARCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/dimLinear.png")
@@ -95,8 +85,8 @@ class QadDIMLINEARCommandClass(QadCommandClass):
       self.entSelClass = None
       self.GetAngleClass = None
             
-      self.dimPt1 = QgsPoint() # primo punto di quotatura esplicito
-      self.dimPt2 = QgsPoint() # secondo punto di quotatura esplicito
+      self.dimPt1 = QgsPointXY() # primo punto di quotatura esplicito
+      self.dimPt2 = QgsPointXY() # secondo punto di quotatura esplicito
       self.dimCircle = None    # oggetto cerchio da quotare
       
       self.measure = None # misura della quota (se None viene calcolato)
@@ -242,7 +232,7 @@ class QadDIMLINEARCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
 
@@ -346,7 +336,7 @@ class QadDIMLINEARCommandClass(QadCommandClass):
          if value is None:
             return True
 
-         if type(value) == QgsPoint: # se é stato inserito il secondo punto
+         if type(value) == QgsPointXY: # se é stato inserito il secondo punto
             self.dimPt2.set(value.x(), value.y())
             self.waitForDimensionLinePos()
          
@@ -410,7 +400,7 @@ class QadDIMLINEARCommandClass(QadCommandClass):
                self.step = 7
                self.GetAngleClass.run(msgMapTool, msg)               
                pass
-         elif type(value) == QgsPoint: # se é stato inserito il punto di posizionamento linea quota
+         elif type(value) == QgsPointXY: # se é stato inserito il punto di posizionamento linea quota
             self.preferredAlignment = self.getPointMapTool().preferredAlignment
             self.dimPt1 = self.getPointMapTool().dimPt1
             self.dimPt2 = self.getPointMapTool().dimPt2
@@ -470,7 +460,7 @@ class QadDIMALIGNEDCommandClass(QadCommandClass):
       return "DIMALIGNED"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runDIMALIGNEDCommand)
+      action.triggered.connect(self.plugIn.runDIMALIGNEDCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/dimAligned.png")
@@ -484,8 +474,8 @@ class QadDIMALIGNEDCommandClass(QadCommandClass):
       self.entSelClass = None
       self.GetAngleClass = None
       
-      self.dimPt1 = QgsPoint()
-      self.dimPt2 = QgsPoint()
+      self.dimPt1 = QgsPointXY()
+      self.dimPt2 = QgsPointXY()
       self.dimCircle = None    # oggetto cerchio da quotare
       
       self.measure = None # misura della quota (se None viene calcolato)
@@ -620,7 +610,7 @@ class QadDIMALIGNEDCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
 
@@ -728,7 +718,7 @@ class QadDIMALIGNEDCommandClass(QadCommandClass):
          if value is None:
             return True
 
-         if type(value) == QgsPoint: # se é stato inserito il secondo punto
+         if type(value) == QgsPointXY: # se é stato inserito il secondo punto
             self.dimPt2.set(value.x(), value.y())
             self.waitForDimensionLinePos()
          
@@ -771,7 +761,7 @@ class QadDIMALIGNEDCommandClass(QadCommandClass):
                self.GetAngleClass.angle = self.dimStyle.textForcedRot
                self.step = 6
                self.GetAngleClass.run(msgMapTool, msg)               
-         elif type(value) == QgsPoint: # se é stato inserito il punto di posizionamento linea quota
+         elif type(value) == QgsPointXY: # se é stato inserito il punto di posizionamento linea quota
             self.dimPt1 = self.getPointMapTool().dimPt1
             self.dimPt2 = self.getPointMapTool().dimPt2
             self.addDimToLayers(value)
@@ -817,7 +807,7 @@ class QadDIMARCCommandClassStepEnum():
    ASK_FOR_2PT_ARC      = 6 # richiede il secondo punto dell'arco
 
 
-# Classe che gestisce il comando DIMARC da finire
+# Classe che gestisce il comando DIMARC
 class QadDIMARCCommandClass(QadCommandClass):
 
    def instantiateNewCmd(self):
@@ -831,7 +821,7 @@ class QadDIMARCCommandClass(QadCommandClass):
       return "DIMARC"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runDIMARCCommand)
+      action.triggered.connect(self.plugIn.runDIMARCCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/dimArc.png")
@@ -844,8 +834,8 @@ class QadDIMARCCommandClass(QadCommandClass):
       QadCommandClass.__init__(self, plugIn)
       self.entSelClass = None
       self.GetAngleClass = None
-      self.dimPt1 = QgsPoint()
-      self.dimPt2 = QgsPoint()
+      self.dimPt1 = QgsPointXY()
+      self.dimPt2 = QgsPointXY()
       self.dimArc = None    # oggetto arco da quotare
       self.dimPartialArc = QadArc()
       self.leader = False # opzione disponibile solo per archi > 90 gradi 
@@ -903,6 +893,8 @@ class QadDIMARCCommandClass(QadCommandClass):
       obj = qad_utils.whatGeomIs(point, geom)
       if (obj is None):
          return False
+      if (type(obj) == list or type(obj) == tuple): # se é una lista di 2 punti
+         return False      
       if obj.whatIs() == "ARC":
          self.dimArc = obj
          self.dimPartialArc.set(self.dimArc.center, self.dimArc.radius, self.dimArc.startAngle, self.dimArc.endAngle)
@@ -993,19 +985,18 @@ class QadDIMARCCommandClass(QadCommandClass):
       self.getPointMapTool().setMode(Qad_dim_maptool_ModeEnum.FIRST_SECOND_PT_KNOWN_ASK_FOR_ARC_DIM_LINE_POS)
       
       # si appresta ad attendere un punto o una parola chiave
-      # si appresta ad attendere un punto o una parola chiave
       keyWords = QadMsg.translate("Command_DIM", "Text") + "/" + \
                  QadMsg.translate("Command_DIM", "Angle") + "/" + \
-                 QadMsg.translate("Command_DIM", "Partial") + "/"
+                 QadMsg.translate("Command_DIM", "Partial")
       englishKeyWords = "Text" + "/" + "Angle" + "/" + "Partial"
       
       # se l'angolo dell'arco è > 90 gradi si usa anche l'opzione direttrice
-      if self.dimArc.totalAngle() > math.pi:
+      if self.dimArc.totalAngle() > math.pi / 2:
          if self.leader == False:
-            keyWords = keyWords + QadMsg.translate("Command_DIM", "Leader")
+            keyWords = keyWords + "/" + QadMsg.translate("Command_DIM", "Leader")
             englishKeyWords = englishKeyWords + "/" + "Leader"
          else:
-            keyWords = keyWords + QadMsg.translate("Command_DIM", "No leader")
+            keyWords = keyWords + "/" + QadMsg.translate("Command_DIM", "No leader")
             englishKeyWords = englishKeyWords + "/" + "No leader"
          
       prompt = QadMsg.translate("Command_DIM", "Specify dimension location or [{0}]: ").format(keyWords)
@@ -1051,7 +1042,7 @@ class QadDIMARCCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
 
@@ -1135,7 +1126,7 @@ class QadDIMARCCommandClass(QadCommandClass):
                self.leader = False
                self.waitForDimensionLinePos()
                
-         elif type(value) == QgsPoint: # se é stato inserito il punto di posizionamento linea quota
+         elif type(value) == QgsPointXY: # se é stato inserito il punto di posizionamento linea quota
             self.addDimToLayers(value)
             return True # fine comando
             
@@ -1186,7 +1177,7 @@ class QadDIMARCCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito il secondo punto
+         if type(value) == QgsPointXY: # se é stato inserito il secondo punto
             ptOnArc = self.getPartialPtOnArc(value)
             if ptOnArc is not None:
                self.dimPt1.set(ptOnArc.x(), ptOnArc.y())
@@ -1215,7 +1206,7 @@ class QadDIMARCCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito il secondo punto
+         if type(value) == QgsPointXY: # se é stato inserito il secondo punto
             ptOnArc = self.getPartialPtOnArc(value)
             if ptOnArc is not None:
                self.dimPt2.set(ptOnArc.x(), ptOnArc.y())
@@ -1224,4 +1215,276 @@ class QadDIMARCCommandClass(QadCommandClass):
             self.waitForDimensionLinePos()
          
          return False 
+
+
+#===============================================================================
+# QadDIMRADIUSCommandClassStepEnum class.
+#===============================================================================
+class QadDIMRADIUSCommandClassStepEnum():
+   START                = 0 # deve essere = 0 perchè è l'inizio del comando
+   ASK_FOR_ENTSEL       = 1 # richiede la selezione di un'entità
+   ASK_FOR_MAIN_OPTIONS = 2 # richiede di selezionare un'opzione
+   ASK_FOR_TEXT_VALUE   = 3 # richiede il valore del testo della quota
+   ASK_FOR_TEXT_ROT     = 4 # richiede la rotazione del testo della quota
+
+
+# Classe che gestisce il comando DIMRADIUS
+class QadDIMRADIUSCommandClass(QadCommandClass):
+
+   def instantiateNewCmd(self):
+      """ istanzia un nuovo comando dello stesso tipo """
+      return QadDIMRADIUSCommandClass(self.plugIn)
+   
+   def getName(self):
+      return QadMsg.translate("Command_list", "DIMRADIUS")
+
+   def getEnglishName(self):
+      return "DIMRADIUS"
+
+   def connectQAction(self, action):
+      action.triggered.connect(self.plugIn.runDIMRADIUSCommand)
+
+   def getIcon(self):
+      return QIcon(":/plugins/qad/icons/dimRadius.png")
+
+   def getNote(self):
+      # impostare le note esplicative del comando
+      return QadMsg.translate("Command_DIM", "Creates a radius dimension for a circle or an arc.")
+   
+   def __init__(self, plugIn):
+      QadCommandClass.__init__(self, plugIn)
+      self.entSelClass = None
+      self.GetAngleClass = None
+      self.dimObj = None    # oggetto arco o circle da quotare
+            
+      self.measure = None # misura della quota (se None viene calcolato)
+      # leggo lo stile di quotatura corrente
+      dimStyleName = QadVariables.get(QadMsg.translate("Environment variables", "DIMSTYLE"))
+      self.dimStyle = QadDimStyles.findDimStyle(dimStyleName)
+      if self.dimStyle is not None:
+         self.dimStyle.dimType = QadDimTypeEnum.ARC_LENTGH
       
+
+   def __del__(self):
+      QadCommandClass.__del__(self)
+      if self.entSelClass is not None:
+         self.entSelClass.entity.deselectOnLayer()
+         del self.entSelClass
+      if self.GetAngleClass is not None:
+         del self.GetAngleClass
+
+
+   def getPointMapTool(self, drawMode = QadGetPointDrawModeEnum.NONE):
+      if self.step == QadDIMRADIUSCommandClassStepEnum.ASK_FOR_ENTSEL: # quando si é in fase di selezione entità
+         return self.entSelClass.getPointMapTool(drawMode)
+      # quando si é in fase di richiesta rotazione
+      elif self.step == QadDIMRADIUSCommandClassStepEnum.ASK_FOR_TEXT_ROT:
+         return self.GetAngleClass.getPointMapTool()
+      else:
+         if (self.plugIn is not None):
+            if self.PointMapTool is None:
+               self.PointMapTool = Qad_dim_maptool(self.plugIn)
+            return self.PointMapTool
+         else:
+            return None
+
+
+   def getCurrentContextualMenu(self):
+      if self.step == QadDIMRADIUSCommandClassStepEnum.ASK_FOR_ENTSEL: # quando si é in fase di selezione entità
+         return self.entSelClass.getCurrentContextualMenu()
+      # quando si é in fase di richiesta rotazione
+      elif self.step == QadDIMRADIUSCommandClassStepEnum.ASK_FOR_TEXT_ROT:
+         return self.GetAngleClass.getCurrentContextualMenu()
+      else:
+         return self.contextualMenu
+
+
+   #============================================================================
+   # setArcOrCircle
+   #============================================================================
+   def setArcOrCircle(self, entity, point):
+      """
+      Setta self.dimObj che definisce l'arco o il cerchio da quotare
+      """      
+      geom = self.layerToMapCoordinates(entity.layer, entity.getGeometry())
+      obj = qad_utils.whatGeomIs(point, geom)
+      if (obj is None):
+         return False
+      if (type(obj) == list or type(obj) == tuple): # se é una lista di 2 punti
+         return False
+      if obj.whatIs() == "ARC" or obj.whatIs() == "CIRCLE":
+         self.dimObj = obj
+         return True
+      else:
+         return False
+
+
+   #============================================================================
+   # addDimToLayers
+   #============================================================================
+   def addDimToLayers(self, linePosPt):
+      return self.dimStyle.addRadiusDimToLayers(self.plugIn, self.dimObj, \
+                                                linePosPt, self.measure)
+
+   
+   #============================================================================
+   # waitForEntsel
+   #============================================================================
+   def waitForEntsel(self, msgMapTool, msg):
+      if self.entSelClass is not None:
+         del self.entSelClass
+      self.step = QadDIMRADIUSCommandClassStepEnum.ASK_FOR_ENTSEL
+      self.entSelClass = QadEntSelClass(self.plugIn)
+      self.entSelClass.msg = QadMsg.translate("Command_DIM", "Select arc or circle: ")
+      # scarto la selezione di punti e delle quote
+      self.entSelClass.checkPointLayer = False
+      self.entSelClass.checkLineLayer = True
+      self.entSelClass.checkPolygonLayer = True
+      self.entSelClass.checkDimLayers = False
+      self.entSelClass.getPointMapTool().setSnapType(QadSnapTypeEnum.DISABLE)
+      self.entSelClass.run(msgMapTool, msg)
+      
+   
+   #============================================================================
+   # waitForDimensionLinePos
+   #============================================================================
+   def waitForDimensionLinePos(self):
+      self.step = QadDIMRADIUSCommandClassStepEnum.ASK_FOR_MAIN_OPTIONS
+      # imposto il map tool
+      if self.dimObj.whatIs() == "ARC":
+         self.getPointMapTool().dimArc = self.dimObj
+      else:
+         self.getPointMapTool().dimCircle = self.dimObj
+
+      self.getPointMapTool().dimStyle = self.dimStyle
+      self.getPointMapTool().setMode(Qad_dim_maptool_ModeEnum.OBJ_KNOWN_ASK_FOR_RADIUS_DIM_LINE_POS)
+      
+      # si appresta ad attendere un punto o una parola chiave
+      # si appresta ad attendere un punto o una parola chiave
+      keyWords = QadMsg.translate("Command_DIM", "Text") + "/" + \
+                 QadMsg.translate("Command_DIM", "Angle")
+      englishKeyWords = "Text" + "/" + "Angle"
+
+      prompt = QadMsg.translate("Command_DIM", "Specify dimension location or [{0}]: ").format(keyWords)
+      keyWords += "_" + englishKeyWords
+
+      # msg, inputType, default, keyWords, nessun controllo
+      self.waitFor(prompt, \
+                   QadInputTypeEnum.POINT2D | QadInputTypeEnum.KEYWORDS, \
+                   None, \
+                   keyWords, \
+                   QadInputModeEnum.NONE)                                      
+
+
+   #============================================================================
+   # run
+   #============================================================================
+   def run(self, msgMapTool = False, msg = None):
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
+         self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
+         return True # fine comando
+
+      if self.dimStyle is None:
+         self.showMsg(QadMsg.translate("QAD", "\nDimension style not valid.\nVerify the value of DIMSTYLE variable.\n"))
+         return True # fine comando
+         
+      errMsg = self.dimStyle.getInValidErrMsg()
+      if errMsg is not None:
+         self.showMsg(errMsg)
+         return True # fine comando
+      
+      errMsg = self.dimStyle.getNotGraphEditableErrMsg()
+      if errMsg is not None:
+         self.showMsg(errMsg)
+         return True # fine comando
+
+      if self.step == QadDIMRADIUSCommandClassStepEnum.START:
+         self.waitForEntsel(msgMapTool, msg)
+         return False # continua
+
+      #=========================================================================
+      # RISPOSTA ALLA SELEZIONE DI UN'ENTITA'
+      if self.step == QadDIMRADIUSCommandClassStepEnum.ASK_FOR_ENTSEL:
+         if self.entSelClass.run(msgMapTool, msg) == True:
+            if self.entSelClass.entity.isInitialized():
+               if self.setArcOrCircle(self.entSelClass.entity, self.entSelClass.point) == True:
+                  self.waitForDimensionLinePos()
+               else:
+                  self.showMsg(QadMsg.translate("Command_DIM", "Select an arc or polyline arc segment."))
+            else:               
+               if self.entSelClass.canceledByUsr == True: # fine comando
+                  return True
+               self.showMsg(QadMsg.translate("QAD", "No geometries in this position."))
+               self.waitForEntsel(msgMapTool, msg)
+         return False # continua
+
+
+      #=========================================================================
+      # RISPOSTA ALLA RICHIESTA DELLA POSIZIONE DELLA LINEA DI QUOTA
+      elif self.step == QadDIMRADIUSCommandClassStepEnum.ASK_FOR_MAIN_OPTIONS: # dopo aver atteso un punto o una opzione si riavvia il comando
+         if msgMapTool == True: # il punto arriva da una selezione grafica
+            # la condizione seguente si verifica se durante la selezione di un punto
+            # é stato attivato un altro plugin che ha disattivato Qad
+            # quindi stato riattivato il comando che torna qui senza che il maptool
+            # abbia selezionato un punto            
+            if self.getPointMapTool().point is None: # il maptool é stato attivato senza un punto
+               if self.getPointMapTool().rightButton == True: # se usato il tasto destro del mouse
+                  return True # fine comando
+               else:
+                  self.setMapTool(self.getPointMapTool()) # riattivo il maptool
+                  return False
+
+            value = self.getPointMapTool().point
+         else: # il punto arriva come parametro della funzione
+            value = msg
+
+         if type(value) == unicode:
+            if value == QadMsg.translate("Command_DIM", "Text") or value == "Text":
+               prompt = QadMsg.translate("Command_DIM", "Enter dimension text <{0}>: ")
+               dist = self.dimObj.radius
+               self.waitForString(prompt.format(str(dist)), dist)
+               self.getPointMapTool().setMode(Qad_dim_maptool_ModeEnum.ASK_FOR_TEXT)
+               self.step = QadDIMRADIUSCommandClassStepEnum.ASK_FOR_TEXT_VALUE
+            elif value == QadMsg.translate("Command_DIM", "Angle") or value == "Angle":
+               # si appresta ad attendere l'angolo di rotazione del testo
+               if self.GetAngleClass is not None:
+                  del self.GetAngleClass                                   
+               self.GetAngleClass = QadGetAngleClass(self.plugIn)
+               prompt = QadMsg.translate("Command_DIM", "Specify angle of dimension text <{0}>: ")
+               self.GetAngleClass.msg = prompt.format(str(qad_utils.toDegrees(self.dimStyle.textForcedRot)))
+               self.GetAngleClass.angle = self.dimStyle.textForcedRot
+               self.step = QadDIMRADIUSCommandClassStepEnum.ASK_FOR_TEXT_ROT
+               self.GetAngleClass.run(msgMapTool, msg)
+               
+         elif type(value) == QgsPointXY: # se é stato inserito il punto di posizionamento linea quota
+            self.addDimToLayers(value)
+            return True # fine comando
+            
+         return False
+
+
+      #=========================================================================
+      # RISPOSTA ALLA RICHIESTA DEL TESTO (da step = ASK_FOR_MAIN_OPTIONS)
+      elif self.step == QadDIMRADIUSCommandClassStepEnum.ASK_FOR_TEXT_VALUE: # dopo aver atteso una stringa si riavvia il comando
+         if type(msg) == unicode:
+            text = msg.strip()
+            if len(text) > 0:
+               self.measure = text
+               self.getPointMapTool().measure = self.measure
+         self.waitForDimensionLinePos()
+            
+         return False
+      
+      
+      #=========================================================================
+      # RISPOSTA ALLA RICHIESTA ROTAZIONE DEL TESTO DI QUOTA (da step = ASK_FOR_MAIN_OPTIONS)
+      elif self.step == QadDIMRADIUSCommandClassStepEnum.ASK_FOR_TEXT_ROT:
+         if self.GetAngleClass.run(msgMapTool, msg) == True:
+            if self.GetAngleClass.angle is not None:
+               self.dimStyle.textRotMode = QadDimStyleTxtRotModeEnum.FORCED_ROTATION
+               self.dimStyle.textForcedRot = self.GetAngleClass.angle 
+            self.waitForDimensionLinePos()
+
+         return False
+      
+

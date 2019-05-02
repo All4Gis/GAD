@@ -1,43 +1,35 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per la gestione dei cerchi
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import math
 import sys
 
-import qad_utils
-from qad_variables import *
-from qad_arc import *
-from qad_msg import QadMsg
+from . import qad_utils
+from .qad_variables import *
+from .qad_arc import *
+from .qad_msg import QadMsg
 
 
 #===============================================================================
-# QadArc arc class
+# QadCircle circle class
 #===============================================================================
 class QadCircle():
     
@@ -54,18 +46,18 @@ class QadCircle():
    def set(self, center, radius):
       if radius <=0:
          return False
-      self.center = QgsPoint(center)
+      self.center = QgsPointXY(center)
       self.radius = radius
       return True
 
-   def transform(self, ct):
+   def transform(self, coordTransform):
       """Transform this geometry as described by CoordinateTranasform ct."""
       self.center = coordTransform.transform(self.center)      
 
    def transformFromCRSToCRS(self, sourceCRS, destCRS):
       """Transform this geometry as described by CRS."""
       if (sourceCRS is not None) and (destCRS is not None) and sourceCRS != destCRS:       
-         coordTransform = QgsCoordinateTransform(sourceCRS, destCRS) # trasformo le coord
+         coordTransform = QgsCoordinateTransform(sourceCRS, destCRS,QgsProject.instance()) # trasformo le coord
          self.center =  coordTransform.transform(self.center)
    
    def __eq__(self, circle):
@@ -129,10 +121,10 @@ class QadCircle():
 
    def getQuadrantPoints(self):
       # ritorna i punti quadranti: pt in alto, pt in basso, a destra, a sinistra del centro
-      pt1 = QgsPoint(self.center.x(), self.center.y() + self.radius)
-      pt2 = QgsPoint(self.center.x(), self.center.y()- self.radius)
-      pt3 = QgsPoint(self.center.x() + self.radius, self.center.y())
-      pt4 = QgsPoint(self.center.x() - self.radius, self.center.y())
+      pt1 = QgsPointXY(self.center.x(), self.center.y() + self.radius)
+      pt2 = QgsPointXY(self.center.x(), self.center.y()- self.radius)
+      pt3 = QgsPointXY(self.center.x() + self.radius, self.center.y())
+      pt4 = QgsPointXY(self.center.x() - self.radius, self.center.y())
       return [pt1, pt2, pt3, pt4]
 
    
@@ -220,9 +212,9 @@ class QadCircle():
          x2 = (-B - E) / (2 * A)           
          y2 = a * x2 + b
       
-      result.append(QgsPoint(x1, y1))
+      result.append(QgsPointXY(x1, y1))
       if x1 != x2 or y1 != y2: # i punti non sono coincidenti
-         result.append(QgsPoint(x2, y2))
+         result.append(QgsPointXY(x2, y2))
       
       return result
 
@@ -275,9 +267,9 @@ class QadCircle():
          x2 = (-B - E) / (2 * A)
          y2 = p1.y() + m * x2 - m * p1.x()
       
-      result.append(QgsPoint(x1, y1))
+      result.append(QgsPointXY(x1, y1))
       if x1 != x2 or y1 != y2: # i punti non sono coincidenti
-         result.append(QgsPoint(x2, y2))
+         result.append(QgsPointXY(x2, y2))
       
       return result
 
@@ -349,8 +341,8 @@ class QadCircle():
             ny = vy * c + sign2 * h * vx;
 
             tangent = []
-            tangent.append(QgsPoint(x1 + r1 * nx, y1 + r1 * ny))
-            tangent.append(QgsPoint(x2 + sign1 * r2 * nx, y2 + sign1 * r2 * ny))
+            tangent.append(QgsPointXY(x1 + r1 * nx, y1 + r1 * ny))
+            tangent.append(QgsPointXY(x2 + sign1 * r2 * nx, y2 + sign1 * r2 * ny))
             tangents.append(tangent)
             sign2 = sign2 - 2
             
@@ -416,16 +408,13 @@ class QadCircle():
    #============================================================================
    # fromPolyline
    #============================================================================
-   def fromPolyline(self, points, atLeastNSegment = None):
+   def fromPolylineXY(self, points, atLeastNSegment = None):
       """
       setta le caratteristiche del cerchio incontrato nella lista di punti
       ritorna True se é stato trovato un cerchio altrimenti False.
       N.B. in punti NON devono essere in coordinate geografiche
       """
       totPoints = len(points)
-
-      # il primo e l'ultimo punto devono coincidere
-      if qad_utils.ptNear(points[0], points[totPoints-1]) == False: return False
       
       if atLeastNSegment is None:
          _atLeastNSegment = QadVariables.get(QadMsg.translate("Environment variables", "CIRCLEMINSEGMENTQTY"), 12)
@@ -435,6 +424,9 @@ class QadCircle():
       # perché sia un cerchio ci vogliono almeno _atLeastNSegment segmenti
       if (totPoints - 1) < _atLeastNSegment or _atLeastNSegment < 2:
          return False
+
+      # il primo e l'ultimo punto devono coincidere
+      if qad_utils.ptNear(points[0], points[totPoints-1]) == False: return False
 
       # per problemi di approssimazione dei calcoli
       epsilon = 1.e-4 # percentuale del raggio per ottenere max diff. di una distanza con il raggio
@@ -514,6 +506,28 @@ class QadCircle():
          return True
 
       return False
+
+
+   #============================================================================
+   # rotate
+   #============================================================================
+   def rotate(self, basePt, angle):
+      self.center = qad_utils.rotatePoint(self.center, basePt, angle)
+
+
+   #============================================================================
+   # scale
+   #============================================================================
+   def scale(self, basePt, scale):
+      self.center = qad_utils.scalePoint(self.center, basePt, scale)
+      self.radius = self.radius * scale
+   
+
+   #============================================================================
+   # mirror
+   #============================================================================
+   def mirror(self, mirrorPt, mirrorAngle):
+      self.center = qad_utils.mirrorPoint(self.center, mirrorPt, mirrorAngle)
 
 
    #============================================================================
@@ -1069,7 +1083,7 @@ class QadCircle():
       a1 = (-J + math.sqrt(L)) / (2 * I)
       b1 = (a1 * H) + G
       c1 = - B - (a1 * pt2[0]) - (b1 * pt2[1])
-      center = QgsPoint()
+      center = QgsPointXY()
       center.setX(- (a1 / 2))
       center.setY(- (b1 / 2))
       radius = math.sqrt((a1 * a1 / 4) + (b1 * b1 / 4) - c1)
@@ -1883,36 +1897,36 @@ class QadCircleList():
       ndxGeom = 0
       # riduco in polilinee
       wkbType = geom.wkbType()
-      if wkbType == QGis.WKBLineString:
+      if wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
          points = geom.asPolyline() # vettore di punti
-         if circle.fromPolyline(points, _atLeastNSegment):
+         if circle.fromPolylineXY(points, _atLeastNSegment):
             self.circleList.append(circle)
             self.ndxGeomList.append([ndxGeom])
             return 1
-      elif wkbType == QGis.WKBMultiLineString:
+      elif wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
          lineList = geom.asMultiPolyline() # vettore di linee
          for points in lineList:
-            if circle.fromPolyline(points, _atLeastNSegment):
+            if circle.fromPolylineXY(points, _atLeastNSegment):
                self.circleList.append(QadCircle(circle)) # ne faccio una copia
                self.ndxGeomList.append([ndxGeom])
             ndxGeom = ndxGeom + 1
-      elif wkbType == QGis.WKBPolygon:
+      elif wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
          iRing = -1
          lineList = geom.asPolygon() # vettore di linee
          for points in lineList:
-            if circle.fromPolyline(points, _atLeastNSegment):
+            if circle.fromPolylineXY(points, _atLeastNSegment):
                self.circleList.append(QadCircle(circle)) # ne faccio una copia
                if iRing == -1: # si tratta della parte più esterna
                   self.ndxGeomList.append([ndxGeom])
                else:
                   self.ndxGeomList.append([ndxGeom, iRing])
             iRing = iRing + 1
-      elif wkbType == QGis.WKBMultiPolygon:
+      elif wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
          polygonList = geom.asMultiPolygon() # vettore di poligoni
          for polygon in polygonList:
             iRing = -1
             for points in polygon:
-               if circle.fromPolyline(points, _atLeastNSegment):
+               if circle.fromPolylineXY(points, _atLeastNSegment):
                   self.circleList.append(QadCircle(circle)) # ne faccio una copia
                   if iRing == -1: # si tratta della parte più esterna
                      self.ndxGeomList.append([ndxGeom])

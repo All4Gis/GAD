@@ -1,49 +1,41 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- comando ARRAY per copiare serie di oggetti
- 
-                              -------------------
-        begin                : 2016-05-03
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_array_maptool import *
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_getpoint import *
-from qad_getdist_cmd import QadGetDistClass
-from qad_getangle_cmd import QadGetAngleClass
-from qad_entsel_cmd import QadEntSelClass
-from qad_textwindow import *
-from qad_ssget_cmd import QadSSGetClass
-from qad_entity import *
-from qad_variables import *
-import qad_utils
-import qad_layer
-from qad_dim import *
-import qad_array_fun
+from .qad_array_maptool import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_getpoint import *
+from .qad_getdist_cmd import QadGetDistClass
+from .qad_getangle_cmd import QadGetAngleClass
+from .qad_entsel_cmd import QadEntSelClass
+from .qad_textwindow import *
+from .qad_ssget_cmd import QadSSGetClass
+from .qad_entity import *
+from .qad_variables import *
+from . import qad_utils
+from . import qad_layer
+from .qad_dim import *
+from . import qad_array_fun
 
 #===============================================================================
 # QadARRAYCommandClassSeriesTypeEnum class.
@@ -116,7 +108,7 @@ class QadARRAYCommandClass(QadCommandClass):
       return "ARRAY"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runARRAYCommand)
+      action.triggered.connect(self.plugIn.runARRAYCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/arrayRect.png")
@@ -133,7 +125,7 @@ class QadARRAYCommandClass(QadCommandClass):
       self.entitySet = QadEntitySet()
       self.defaultValue = None
       
-      self.basePt = QgsPoint()      
+      self.basePt = QgsPointXY()
       self.arrayType = self.plugIn.lastArrayType_array
       self.distanceBetweenRows = None
       self.distanceBetweenCols = None
@@ -147,7 +139,7 @@ class QadARRAYCommandClass(QadCommandClass):
       self.rectangleAngle = self.plugIn.lastRectangleAngle_array
       self.rectangleCols = self.plugIn.lastRectangleCols_array
       self.rectangleRows = self.plugIn.lastRectangleRows_array
-      self.firstPt = QgsPoint() # primo punto per misurare la distanza tra righe
+      self.firstPt = QgsPointXY() # primo punto per misurare la distanza tra righe
       
       # serie traiettoria
       self.pathTangentDirection = self.plugIn.lastPathTangentDirection_array
@@ -158,7 +150,7 @@ class QadARRAYCommandClass(QadCommandClass):
       self.distanceFromStartPt = 0.0 # uso interno quando si imposta il metodo dividi
       
       # serie polare
-      self.centerPt = QgsPoint()
+      self.centerPt = QgsPointXY()
       self.polarItemsNumber = self.plugIn.lastPolarItemsNumber_array
       self.polarAngleBetween = self.plugIn.lastPolarAngleBetween_array
       self.polarRows = self.plugIn.lastPolarRows_array
@@ -200,7 +192,7 @@ class QadARRAYCommandClass(QadCommandClass):
 
    def getCurrentContextualMenu(self):
       if self.step == QadARRAYCommandClassStepEnum.ASK_FOR_SELSET: # quando si é in fase di selezione entità
-         return self.SSGetClass.getCurrentContextualMenu()
+         return None # return self.SSGetClass.getCurrentContextualMenu()
       # quando si é in fase di richiesta rotazione
       elif self.step == QadARRAYCommandClassStepEnum.ASK_FOR_ANGLE or \
            self.step == QadARRAYCommandClassStepEnum.ASK_FOR_TAN_DIRECTION or \
@@ -441,7 +433,7 @@ class QadARRAYCommandClass(QadCommandClass):
       if dummy[2] is not None:
          # ritorna la sotto-geometria al vertice <atVertex> e la sua posizione nella geometria (0-based)
          subGeom, atSubGeom = qad_utils.getSubGeomAtVertex(geom, dummy[2])
-         self.pathLinearObjectList.fromPolyline(subGeom.asPolyline())
+         self.pathLinearObjectList.fromPolylineXY(subGeom.asPolyline())
          return True
       else:
          return False
@@ -734,12 +726,12 @@ class QadARRAYCommandClass(QadCommandClass):
                         "Columns" + "/" + "Rows" + "/" + "rotate Items" + "/" + "eXit"
 
       self.defaultValue = QadMsg.translate("Command_ARRAY", "eXit")         
-      prompt = QadMsg.translate("Command_ARRAY", "Select an option to edit array or [{0}] <{1}>: ").format(keyWords, self.defaultValue)
+      prompt = QadMsg.translate("Command_ARRAY", "Select an option to edit array [{0}] <{1}>: ").format(keyWords, self.defaultValue)
       keyWords += "_" + englishKeyWords
       # si appresta ad attendere un punto o enter o una parola chiave
       # msg, inputType, default, keyWords, nessun controllo
       self.waitFor(prompt, \
-                   QadInputTypeEnum.POINT2D | QadInputTypeEnum.KEYWORDS, \
+                   QadInputTypeEnum.KEYWORDS, \
                    self.defaultValue, \
                    keyWords, QadInputModeEnum.NONE)
 
@@ -932,12 +924,12 @@ class QadARRAYCommandClass(QadCommandClass):
                         "Rows" + "/" + "Align items" + "/" + "eXit"
 
       self.defaultValue = QadMsg.translate("Command_ARRAY", "eXit")         
-      prompt = QadMsg.translate("Command_ARRAY", "Select an option to edit array or [{0}] <{1}>: ").format(keyWords, self.defaultValue)
+      prompt = QadMsg.translate("Command_ARRAY", "Select an option to edit array [{0}] <{1}>: ").format(keyWords, self.defaultValue)
       keyWords += "_" + englishKeyWords
       # si appresta ad attendere un punto o enter o una parola chiave
       # msg, inputType, default, keyWords, nessun controllo
       self.waitFor(prompt, \
-                   QadInputTypeEnum.POINT2D | QadInputTypeEnum.KEYWORDS, \
+                   QadInputTypeEnum.KEYWORDS, \
                    self.defaultValue, \
                    keyWords, QadInputModeEnum.NONE)
 
@@ -1042,12 +1034,12 @@ class QadARRAYCommandClass(QadCommandClass):
                         "Fill angle" + "/" + "ROWs" + "/" + "Rotate items" + "/" + "eXit"
 
       self.defaultValue = QadMsg.translate("Command_ARRAY", "eXit")         
-      prompt = QadMsg.translate("Command_ARRAY", "Select an option to edit array or [{0}] <{1}>: ").format(keyWords, self.defaultValue)
+      prompt = QadMsg.translate("Command_ARRAY", "Select an option to edit array [{0}] <{1}>: ").format(keyWords, self.defaultValue)
       keyWords += "_" + englishKeyWords
       # si appresta ad attendere un punto o enter o una parola chiave         
       # msg, inputType, default, keyWords, nessun controllo
       self.waitFor(prompt, \
-                   QadInputTypeEnum.POINT2D | QadInputTypeEnum.KEYWORDS, \
+                   QadInputTypeEnum.KEYWORDS, \
                    self.defaultValue, \
                    keyWords, QadInputModeEnum.NONE)      
 
@@ -1096,7 +1088,7 @@ class QadARRAYCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
             
@@ -1230,7 +1222,7 @@ class QadARRAYCommandClass(QadCommandClass):
                   else:                  
                      self.doPolarArray()
                      return True # fine comando                  
-         elif type(value) == QgsPoint: # se é stato indicato un punto
+         elif type(value) == QgsPointXY: # se é stato indicato un punto
             pass
          
          return False
@@ -1376,7 +1368,7 @@ class QadARRAYCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito il primo punto per misurare la distanza tra colonne
+         if type(value) == QgsPointXY: # se é stato inserito il primo punto per misurare la distanza tra colonne
             self.waitForRectangleColumnsSpacing2Pt(value)
          elif type(value) == float: # se é stato inserita la distanza
             self.distanceBetweenCols = value
@@ -1423,7 +1415,7 @@ class QadARRAYCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito il primo punto per misurare la distanza tra righe
+         if type(value) == QgsPointXY: # se é stato inserito il primo punto per misurare la distanza tra righe
             self.waitForDistanceBetweenRows2Pt(value)
          elif type(value) == float: # se é stato inserita la distanza
             self.distanceBetweenRows = value
@@ -1463,7 +1455,7 @@ class QadARRAYCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito il primo punto per misurare la distanza tra righe
+         if type(value) == QgsPointXY: # se é stato inserito il primo punto per misurare la distanza tra righe
             self.firstPt.set(value.x(), value.y())
             self.waitForRectangleSecondCellCorner()
          return False
@@ -1488,7 +1480,7 @@ class QadARRAYCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito il primo punto per misurare la distanza tra righe
+         if type(value) == QgsPointXY: # se é stato inserito il primo punto per misurare la distanza tra righe
             if (value.y() - self.firstPt.y()) == 0 or (value.x() - self.firstPt.x()) == 0:
                self.showErr(QadMsg.translate("Command_ARRAY", "\nCell size must be greater than 0."))
             else:
@@ -1547,7 +1539,7 @@ class QadARRAYCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito il primo punto per misurare la distanza tra righe
+         if type(value) == QgsPointXY: # se é stato inserito il primo punto per misurare la distanza tra righe
             self.waitForRectangleColumnsSpacing2Pt(value)
          elif type(value) == float: # se é stato inserita la distanza
             self.distanceBetweenCols = value
@@ -1637,7 +1629,7 @@ class QadARRAYCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito il primo punto per misurare la distanza tra righe
+         if type(value) == QgsPointXY: # se é stato inserito il primo punto per misurare la distanza tra righe
             self.waitForDistanceBetweenRows2Pt(value)
          elif type(value) == float: # se é stato inserita la distanza
             self.distanceBetweenRows = value
@@ -1853,7 +1845,7 @@ class QadARRAYCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito il punto centrale della serie
+         if type(value) == QgsPointXY: # se é stato inserito il punto centrale della serie
             self.centerPt.set(value.x(), value.y())
             self.waitForMainOptions()
          elif type(value) == unicode:
@@ -1935,7 +1927,7 @@ class QadARRAYRECTCommandClass(QadCommandClass):
       return "ARRAYRECT"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runARRAYRECTCommand)
+      action.triggered.connect(self.plugIn.runARRAYRECTCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/arrayRect.png")
@@ -1966,7 +1958,7 @@ class QadARRAYRECTCommandClass(QadCommandClass):
 
    def getCurrentContextualMenu(self):
       if self.step == QadARRAYCommandClassStepEnum.ASK_FOR_SELSET: # quando si é in fase di selezione entità
-         return self.SSGetClass.getCurrentContextualMenu()
+         return None # return self.SSGetClass.getCurrentContextualMenu()
       else:
          return self.arrayCmd.getCurrentContextualMenu()
 
@@ -1975,7 +1967,7 @@ class QadARRAYRECTCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
             
@@ -2016,7 +2008,7 @@ class QadARRAYPATHCommandClass(QadCommandClass):
       return "ARRAYPATH"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runARRAYPATHCommand)
+      action.triggered.connect(self.plugIn.runARRAYPATHCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/arrayPath.png")
@@ -2047,7 +2039,7 @@ class QadARRAYPATHCommandClass(QadCommandClass):
 
    def getCurrentContextualMenu(self):
       if self.step == QadARRAYCommandClassStepEnum.ASK_FOR_SELSET: # quando si é in fase di selezione entità
-         return self.SSGetClass.getCurrentContextualMenu()
+         return None # return self.SSGetClass.getCurrentContextualMenu()
       else:
          return self.arrayCmd.getCurrentContextualMenu()
 
@@ -2056,7 +2048,7 @@ class QadARRAYPATHCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
             
@@ -2097,7 +2089,7 @@ class QadARRAYPOLARCommandClass(QadCommandClass):
       return "ARRAYPOLAR"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runARRAYPOLARCommand)
+      action.triggered.connect(self.plugIn.runARRAYPOLARCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/arrayPolar.png")
@@ -2127,7 +2119,7 @@ class QadARRAYPOLARCommandClass(QadCommandClass):
 
    def getCurrentContextualMenu(self):
       if self.step == QadARRAYCommandClassStepEnum.ASK_FOR_SELSET: # quando si é in fase di selezione entità
-         return self.SSGetClass.getCurrentContextualMenu()
+         return None # return self.SSGetClass.getCurrentContextualMenu()
       else:
          return self.arrayCmd.getCurrentContextualMenu()
 
@@ -2136,7 +2128,7 @@ class QadARRAYPOLARCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
             

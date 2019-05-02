@@ -66,7 +66,7 @@
     </size>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="DisplayTab">
     <attribute name="title">
@@ -243,7 +243,7 @@
        <rect>
         <x>20</x>
         <y>160</y>
-        <width>211</width>
+        <width>221</width>
         <height>17</height>
        </rect>
       </property>
@@ -502,9 +502,9 @@ The aperture box is a box that appears inside the crosshairs when you snap to an
     <widget class="QGroupBox" name="groupBox_5">
      <property name="geometry">
       <rect>
-       <x>290</x>
+       <x>280</x>
        <y>10</y>
-       <width>261</width>
+       <width>271</width>
        <height>71</height>
       </rect>
      </property>
@@ -586,9 +586,9 @@ The aperture box is a box that appears inside the crosshairs when you snap to an
     <widget class="QGroupBox" name="groupBox_7">
      <property name="geometry">
       <rect>
-       <x>290</x>
+       <x>280</x>
        <y>160</y>
-       <width>261</width>
+       <width>271</width>
        <height>81</height>
       </rect>
      </property>
@@ -621,6 +621,22 @@ The aperture box is a box that appears inside the crosshairs when you snap to an
        </rect>
       </property>
      </widget>
+    </widget>
+    <widget class="QPushButton" name="button_DraftingTootipSettings">
+     <property name="geometry">
+      <rect>
+       <x>280</x>
+       <y>250</y>
+       <width>271</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Displays the Drafting Tooltip dialog box. </string>
+     </property>
+     <property name="text">
+      <string>Drafting Tootip settings...</string>
+     </property>
     </widget>
    </widget>
    <widget class="QWidget" name="SelectionTab">
@@ -922,8 +938,8 @@ The aperture box is a box that appears inside the crosshairs when you snap to an
    <slot>horizontalSlider_CURSORSIZE_moved()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>443</x>
-     <y>251</y>
+     <x>445</x>
+     <y>213</y>
     </hint>
     <hint type="destinationlabel">
      <x>586</x>
@@ -938,8 +954,8 @@ The aperture box is a box that appears inside the crosshairs when you snap to an
    <slot>lineEdit_CURSORSIZE_textChanged()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>301</x>
-     <y>249</y>
+     <x>303</x>
+     <y>211</y>
     </hint>
     <hint type="destinationlabel">
      <x>587</x>
@@ -954,8 +970,8 @@ The aperture box is a box that appears inside the crosshairs when you snap to an
    <slot>horizontalSlider_CURSORSIZE_moved()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>485</x>
-     <y>252</y>
+     <x>487</x>
+     <y>213</y>
     </hint>
     <hint type="destinationlabel">
      <x>587</x>
@@ -1091,6 +1107,22 @@ The aperture box is a box that appears inside the crosshairs when you snap to an
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>button_DraftingTootipSettings</sender>
+   <signal>clicked()</signal>
+   <receiver>Options_Dialog</receiver>
+   <slot>button_DraftingTooltipSettings_clicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>547</x>
+     <y>291</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>582</x>
+     <y>341</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>ButtonBOX_Accepted()</slot>
@@ -1107,5 +1139,6 @@ The aperture box is a box that appears inside the crosshairs when you snap to an
   <slot>button_GripColor_clicked()</slot>
   <slot>Button_TextWindowColor_clicked()</slot>
   <slot>Button_AutoSnapWindowColor_clicked()</slot>
+  <slot>button_DraftingTooltipSettings_clicked()</slot>
  </slots>
 </ui>

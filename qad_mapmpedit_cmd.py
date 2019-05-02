@@ -1,45 +1,37 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando MAPMPEDIT per editare un poligono esistente
- 
-                              -------------------
-        begin                : 2016-04-05
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 
 
-from qad_generic_cmd import QadCommandClass
-from qad_snapper import *
-from qad_getpoint import *
-from qad_pline_cmd import QadPLINECommandClass
-from qad_ssget_cmd import QadSSGetClass
-from qad_msg import QadMsg
-from qad_textwindow import *
-import qad_utils
-import qad_layer
-from qad_variables import *
-from qad_entsel_cmd import QadEntSelClass
+from .qad_generic_cmd import QadCommandClass
+from .qad_snapper import *
+from .qad_getpoint import *
+from .qad_pline_cmd import QadPLINECommandClass
+from .qad_ssget_cmd import QadSSGetClass
+from .qad_msg import QadMsg
+from .qad_textwindow import *
+from . import qad_utils
+from . import qad_layer
+from .qad_variables import *
+from .qad_entsel_cmd import QadEntSelClass
 
 
 #===============================================================================
@@ -65,7 +57,7 @@ class QadMAPMPEDITCommandClass(QadCommandClass):
       return "MAPMPEDIT"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runMAPMPEDITCommand)
+      action.triggered.connect(self.plugIn.runMAPMPEDITCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/mapmpedit.png")
@@ -110,7 +102,7 @@ class QadMAPMPEDITCommandClass(QadCommandClass):
          return self.entSelClass.getCurrentContextualMenu()
       elif self.step == 3 or self.step == 5 or \
            self.step == 6 or self.step == 7 or self.step == 8: # quando si é in fase di selezione gruppo entità
-         return self.SSGetClass.getCurrentContextualMenu()           
+         return None # return self.SSGetClass.getCurrentContextualMenu()           
       else:
          return self.contextualMenu
 
@@ -179,12 +171,12 @@ class QadMAPMPEDITCommandClass(QadCommandClass):
       
       for layerEntitySet in entitySet.layerEntitySetList:
          layer = layerEntitySet.layer
-         if layer.geometryType() != QGis.Polygon and layer.geometryType() != QGis.Line:
+         if layer.geometryType() != QgsWkbTypes.PolygonGeometry and layer.geometryType() != QgsWkbTypes.LineGeometry:
             self.showMsg(QadMsg.translate("QAD", "Invalid object."))
             return False
 
          if removeOriginals: layerList.append(layer)
-         coordTransform = QgsCoordinateTransform(layer.crs(), self.poligonEntity.layer.crs())
+         coordTransform = QgsCoordinateTransform(layer.crs(), self.poligonEntity.layer.crs(),QgsProject.instance())
 
          for featureId in layerEntitySet.featureIds:
             # se la feature è quella di polygonEntity è errore 
@@ -202,7 +194,7 @@ class QadMAPMPEDITCommandClass(QadCommandClass):
                # Riduco la geometria in point o polyline
                simplifiedGeoms = qad_utils.asPointOrPolyline(geom)
                # deve essere un poligono senza ring
-               if len(simplifiedGeoms) != 1 or simplifiedGeoms[0].wkbType() != QGis.WKBLineString:
+               if len(simplifiedGeoms) != 1 or simplifiedGeoms[0].wkbType() != QgsWkbTypes.LineString:
                   self.showMsg(QadMsg.translate("QAD", "Invalid object."))
                   return False
                points = simplifiedGeoms[0].asPolyline() # vettore di punti
@@ -211,14 +203,14 @@ class QadMAPMPEDITCommandClass(QadCommandClass):
                   self.showMsg(QadMsg.translate("QAD", "Invalid object."))
                   return False
                del geom
-               geom = QgsGeometry.fromPolygon(geomToAdd.asPolygon())
+               geom = QgsGeometry.fromPolygonXY(geomToAdd.asPolygon())
             else: # se il poligono non è contenuto nella geometria da aggiungere
                # Riduco la geometria in point o polyline
                simplifiedGeoms = qad_utils.asPointOrPolyline(geomToAdd)
                for simplifiedGeom in simplifiedGeoms:
                   points = simplifiedGeom.asPolyline() # vettore di punti                     
                   # se la geometria da aggiungere è contenuta nel poligono
-                  if geom.contains(QgsGeometry.fromPolyline(points)):
+                  if geom.contains(QgsGeometry.fromPolylineXY(points)):
                      # aggiungo un'isola
                      if geom.addRing(points) != 0: # 0 in case of success
                         self.showMsg(QadMsg.translate("QAD", "Invalid object."))
@@ -305,9 +297,9 @@ class QadMAPMPEDITCommandClass(QadCommandClass):
       for layerEntitySet in entitySet.layerEntitySetList:
          del geomList[:]
          layer = layerEntitySet.layer
-         coordTransform = QgsCoordinateTransform(layer.crs(), self.poligonEntity.layer.crs())
+         coordTransform = QgsCoordinateTransform(layer.crs(), self.poligonEntity.layer.crs(),QgsProject.instance())
          
-         if layer.geometryType() == QGis.Polygon:
+         if layer.geometryType() == QgsWkbTypes.PolygonGeometry:
             for featureId in layerEntitySet.featureIds:
                # se la feature è quella di polygonEntity è errore 
                if layer.id() == self.poligonEntity.layerId() and featureId == self.poligonEntity.featureId:
@@ -330,7 +322,7 @@ class QadMAPMPEDITCommandClass(QadCommandClass):
                if removeOriginals and layer.id() != self.poligonEntity.layerId():
                   layerList.append(layer)
 
-         elif layer.geometryType() == QGis.Line:
+         elif layer.geometryType() == QgsWkbTypes.LineGeometry:
             for featureId in layerEntitySet.featureIds:
                f = layerEntitySet.getFeature(featureId)
                # trasformo la geometria nel crs del layer del poligono da modificare
@@ -339,7 +331,7 @@ class QadMAPMPEDITCommandClass(QadCommandClass):
                # Riduco la geometria in point o polyline
                simplifiedGeoms = qad_utils.asPointOrPolyline(geomToAdd)
                for simplifiedGeom in simplifiedGeoms:
-                  if simplifiedGeom.wkbType() != QGis.WKBLineString:
+                  if simplifiedGeom.wkbType() != QgsWkbTypes.LineString:
                      self.showMsg(QadMsg.translate("QAD", "Invalid object."))
                      return False
                   points = simplifiedGeom.asPolyline() # vettore di punti
@@ -347,13 +339,13 @@ class QadMAPMPEDITCommandClass(QadCommandClass):
                   if len(points) < 4 or points[0] != points[-1]: # polilinea chiusa con almeno 4 punti (primo e ultimo uguali)
                      self.showMsg(QadMsg.translate("QAD", "Invalid object."))
                      return False
-                  geomToAdd = QgsGeometry.fromPolygon([points])
+                  geomToAdd = QgsGeometry.fromPolygonXY([points])
                   
                   if opType == QadMAPMPEDITCommandOpTypeEnum.UNION: geom = geom.combine(geomToAdd)
                   elif opType == QadMAPMPEDITCommandOpTypeEnum.INTERSECTION: geom = geom.intersection(geomToAdd)
                   elif opType == QadMAPMPEDITCommandOpTypeEnum.DIFFERENCE: geom = geom.difference(geomToAdd)
                   
-                  if geom is None or geom.type() != QGis.Polygon:
+                  if geom is None or geom.type() != QgsWkbTypes.Polygon:
                      self.showMsg(QadMsg.translate("QAD", "Invalid object."))
                      return False
                   
@@ -397,7 +389,7 @@ class QadMAPMPEDITCommandClass(QadCommandClass):
       
       for layerEntitySet in entitySet.layerEntitySetList:
          layer = layerEntitySet.layer
-         coordTransform = QgsCoordinateTransform(layer.crs(), self.poligonEntity.layer.crs())
+         coordTransform = QgsCoordinateTransform(layer.crs(), self.poligonEntity.layer.crs(),QgsProject.instance())
          
          for featureId in layerEntitySet.featureIds:
             f = layerEntitySet.getFeature(featureId)
@@ -408,7 +400,7 @@ class QadMAPMPEDITCommandClass(QadCommandClass):
             # Riduco la geometria in point o polyline
             simplifiedGeoms = qad_utils.asPointOrPolyline(geom)
             for simplifiedGeom in simplifiedGeoms:
-               if simplifiedGeom.wkbType() == QGis.WKBLineString:
+               if simplifiedGeom.wkbType() == QgsWkbTypes.LineString or simplifiedGeom.wkbType() == QgsWkbTypes.LineStringZ:
                   pointsForConvexHull.extend(simplifiedGeom.asPolyline())
                else:
                   pointsForConvexHull.append(simplifiedGeom.asPoint())
@@ -416,7 +408,7 @@ class QadMAPMPEDITCommandClass(QadCommandClass):
             if removeOriginals and layer.id() != self.poligonEntity.layerId():
                layerList.append(layer)
 
-      geom = QgsGeometry.fromMultiPoint(pointsForConvexHull)
+      geom = QgsGeometry.fromMultiPointXY(pointsForConvexHull)
       geom = geom.convexHull()
       if geom is None:
          self.showMsg(QadMsg.translate("QAD", "Invalid object."))
@@ -459,7 +451,7 @@ class QadMAPMPEDITCommandClass(QadCommandClass):
       geom = f.geometry()
       result, newGeoms, topologyTestPts = geom.splitGeometry(splitLineTransformed, False)
 
-      if result <> 0 or len(newGeoms) == 0:
+      if result != 0 or len(newGeoms) == 0:
          self.showMsg(QadMsg.translate("QAD", "Invalid object."))
          return False
          
@@ -578,7 +570,7 @@ class QadMAPMPEDITCommandClass(QadCommandClass):
 
 
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
       

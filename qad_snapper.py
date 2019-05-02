@@ -1,29 +1,20 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire gli snap
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
+from PyQt5.QtCore import *
 import os.path
 from qgis.core import *
 import math
@@ -31,10 +22,10 @@ import sys
 import bisect
 
 
-import qad_utils
-from qad_arc import *
-from qad_circle import *
-from qad_msg import QadMsg
+from . import qad_utils
+from .qad_arc import *
+from .qad_circle import *
+from .qad_msg import QadMsg
 
 
 #===============================================================================
@@ -366,7 +357,7 @@ class QadSnapper():
                         i = i + 1
    
                if add:
-                  if self.__oSnapPointsForPolar.has_key(key) == False:
+                  if key not in self.__oSnapPointsForPolar:
                      self.__oSnapPointsForPolar[key] = [ptToToggle]
                   else:
                      self.__oSnapPointsForPolar[key].append(ptToToggle)
@@ -493,16 +484,17 @@ class QadSnapper():
       """
 
       p = self.__transformPoint(point, CRS, self.getSnapPointCRS()) # trasformo il punto in coord dei punti di snap
-      g = self.__transformGeomToSnapPointCRS(geom, CRS) # trasformo la geometria in coord dei punti di snap
+      # ottengo la geometria più vicina al mouse trasformata nel sistema di coordinate dei punti di snap
+      g = self.getSubGeomClosestToMousePos(geom, CRS, p)
+      #g = self.__transformGeomToSnapPointCRS(geom, CRS) # trasformo la geometria in coord dei punti di snap
 
       # cerca nella cache i punti di snap statici per una geometria
-      if geom is not None:
-         staticSnapPoints = self.getStaticSnapPoints(g, None, isTemporaryGeom, p)
-         # non uso la cache perchè in caso di multistring o polygon o multipolygon viene usata solo la geometria più vicina a p
-         #staticSnapPoints = self.__getCacheSnapPoints(g)
-         #if staticSnapPoints is None:
-         #   staticSnapPoints = self.getStaticSnapPoints(g, None, isTemporaryGeom)
-         #   self.__setCacheSnapPoints(g, staticSnapPoints)
+      if g is not None:
+         # uso prima la cache
+         staticSnapPoints = self.__getCacheSnapPoints(g)
+         if staticSnapPoints is None:
+            staticSnapPoints = self.getStaticSnapPoints(g, None, isTemporaryGeom)
+            self.__setCacheSnapPoints(g, staticSnapPoints)
       else:
          staticSnapPoints = dict()
       
@@ -520,7 +512,7 @@ class QadSnapper():
          # calcolo le intersezioni delle linee polari e le aggiungo in allSnapPoints[QadSnapTypeEnum.INT]
          intPts = self.getIntPtsBetweenOSnapLinesForPolar()
          if len(intPts) > 0:
-            if allSnapPoints.has_key(QadSnapTypeEnum.INT):
+            if QadSnapTypeEnum.INT in allSnapPoints:
                for intPt in intPts:
                   self.__appendUniquePoint(allSnapPoints[QadSnapTypeEnum.INT], point) # senza duplicazione
             else:
@@ -559,6 +551,34 @@ class QadSnapper():
 
 
    #============================================================================
+   # getSubGeomClosestToMousePos
+   #============================================================================
+   # se si tratta di una geometria multi... ritorna la sottogeometria più vicina al mouse
+   #    convertita nel sistema di coordinate dei punti di snap
+   # se si tratta di una geometria semplice (non multi) ritorna la geoemtria
+   #    convertita nel sistema di coordinate dei punti di snap
+   # geom = geometria da valutare
+   # CRS  = sistema di coordinate della geometria
+   # currentMousePt = posizione del mouse
+   def getSubGeomClosestToMousePos(self, geom, CRS, currentMousePt):
+      if geom is None: return None
+      
+      g = self.__transformGeomToSnapPointCRS(geom, CRS) # trasformo la geometria in coord dei punti di snap
+      wkbType = g.wkbType()
+      
+      if (currentMousePt is not None) and \
+         (wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ or \
+          wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ or \
+          wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ):
+         mousePt = self.__transformPoint(currentMousePt, CRS, self.getSnapPointCRS())         
+         dummy = qad_utils.closestSegmentWithContext(mousePt, g)
+         if dummy[2] is not None:
+            # ritorna la sotto-geometria al vertice <atVertex> e la sua posizione nella geometria (0-based)
+            g, atSubGeom1 = qad_utils.getSubGeomAtVertex(g, dummy[2])
+      return g
+
+
+   #============================================================================
    # getStaticSnapPoints
    #============================================================================
    def getStaticSnapPoints(self, geom, CRS = None, isTemporaryGeom = False, currentMousePt = None):
@@ -586,7 +606,9 @@ class QadSnapper():
       
       storeInCachePts = False
       if (currentMousePt is not None) and \
-         (wkbType == QGis.WKBMultiLineString or wkbType == QGis.WKBPolygon or wkbType == QGis.WKBMultiPolygon):
+         (wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ or \
+          wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ or \
+          wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ):
          mousePt = self.__transformPoint(currentMousePt, CRS, self.getSnapPointCRS())         
          dummy = qad_utils.closestSegmentWithContext(mousePt, g)
          if dummy[2] is not None:
@@ -688,11 +710,11 @@ class QadSnapper():
       
       geoms = qad_utils.asPointOrPolyline(g)
       for igeom in geoms:
-         if (igeom.wkbType() == QGis.WKBLineString):
+         if igeom.wkbType() == QgsWkbTypes.LineString or igeom.wkbType() == QgsWkbTypes.LineStringZ:
             points = igeom.asPolyline() # vettore di punti
             
             # verifico se è un cerchio lo salto
-            if circle.fromPolyline(points): continue
+            if circle.fromPolylineXY(points): continue
              
             # verifico se ci sono archi
             arcList = QadArcList()
@@ -750,11 +772,11 @@ class QadSnapper():
       
       geoms = qad_utils.asPointOrPolyline(g)
       for igeom in geoms:
-         if (igeom.wkbType() == QGis.WKBLineString):
+         if igeom.wkbType() == QgsWkbTypes.LineString or igeom.wkbType() == QgsWkbTypes.LineStringZ:
             points = igeom.asPolyline() # vettore di punti
             
             # verifico se è un cerchio lo salto
-            if circle.fromPolyline(points): continue
+            if circle.fromPolylineXY(points): continue
 
             # verifico se ci sono archi
             arcList = QadArcList()
@@ -796,13 +818,14 @@ class QadSnapper():
       g = self.__transformGeomToSnapPointCRS(geom, CRS) # trasformo la geometria in coord dei punti di snap
 
       # se si tratta di poligono o multipoligono
-      if wkbType == QGis.WKBPolygon or wkbType == QGis.WKBMultiPolygon:
+      if wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ or \
+         wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
          # leggo il/i centroidi
          centroidGeom = g.centroid()
          wkbType = centroidGeom.wkbType()
-         if wkbType == QGis.WKBPoint:
+         if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
             self.__appendUniquePoint(result, centroidGeom.asPoint()) # senza duplicazione
-         elif wkbType == QGis.WKBMultiPoint:
+         elif wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
             for centroidPt in centroidGeom.asMultiPoint(): # vettore di punti
                self.__appendUniquePoint(result, centroidGeom.asPoint()) # senza duplicazione         
       
@@ -811,11 +834,11 @@ class QadSnapper():
       # cerco i cerchi e gli archi presenti in geom
       geoms = qad_utils.asPointOrPolyline(g)
       for igeom in geoms:
-         if (igeom.wkbType() == QGis.WKBLineString):
+         if igeom.wkbType() == QgsWkbTypes.LineString or igeom.wkbType() == QgsWkbTypes.LineStringZ:
             points = igeom.asPolyline() # vettore di punti
             
             # verifico se è un cerchio
-            if circle.fromPolyline(points):
+            if circle.fromPolylineXY(points):
                self.__appendUniquePoint(result, circle.center) # senza duplicazione
             else:
                if points[0] == points[-1]: # polilinea chiusa
@@ -847,14 +870,15 @@ class QadSnapper():
          return result
       
       wkbType = geom.wkbType()
-      if wkbType != QGis.WKBPoint and wkbType != QGis.WKBMultiPoint:
+      if wkbType != QgsWkbTypes.Point and wkbType != QgsWkbTypes.PointZ and \
+         wkbType != QgsWkbTypes.MultiPoint and wkbType != QgsWkbTypes.MultiPointZ:
          return result
       
       g = self.__transformGeomToSnapPointCRS(geom, CRS) # trasformo la geometria in coord dei punti di snap
       
-      if wkbType == QGis.WKBPoint:
+      if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
          self.__appendUniquePoint(result, g.asPoint()) # senza duplicazione
-      elif wkbType == QGis.WKBMultiPoint:
+      elif wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
          for point in g.asMultiPoint(): # vettore di punti 
             self.__appendUniquePoint(result, point) # senza duplicazione
       return result 
@@ -875,7 +899,8 @@ class QadSnapper():
          return result
       
       wkbType = geom.wkbType()
-      if wkbType == QGis.WKBPoint or wkbType == QGis.WKBMultiPoint:
+      if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ or \
+         wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
          return result
       
       g = self.__transformGeomToSnapPointCRS(geom, CRS) # trasformo la geometria in coord dei punti di snap
@@ -921,10 +946,10 @@ class QadSnapper():
             iLayerCRS = iLayer.crs()
             geom_iLayerCoords = QgsGeometry(g)
             if CRS is None: # se non c'é CRS la geom si intende nel sistema di coord dei punti di snap
-               coordTransform = QgsCoordinateTransform(self.getSnapPointCRS(), iLayerCRS) # trasformo in coord ilayer
+               coordTransform = QgsCoordinateTransform(self.getSnapPointCRS(), iLayerCRS,QgsProject.instance()) # trasformo in coord ilayer
                geom_iLayerCoords.transform(coordTransform)
             else:
-               coordTransform = QgsCoordinateTransform(CRS, iLayerCRS) # trasformo in coord ilayer
+               coordTransform = QgsCoordinateTransform(CRS, iLayerCRS,QgsProject.instance()) # trasformo in coord ilayer
                geom_iLayerCoords.transform(coordTransform)
 
             feature = QgsFeature()
@@ -969,7 +994,7 @@ class QadSnapper():
       Cerca il punto proiezione perpendicolare di self.__startPoint 
       (espresso in __snapPointCRS) sul lato di geom più vicino a point.
       - CRS = sistema di coordinate in cui sono espressi geom e point (QgsCoordinateReferenceSystem)
-      Ritorna una lista di punti QgsPoint 
+      Ritorna una lista di punti QgsPointXY
       """         
       result = []
       
@@ -1086,8 +1111,9 @@ class QadSnapper():
       geoms = qad_utils.asPointOrPolyline(g)
 
       first = True               
-      for g in geoms:     
-         if g.wkbType() == QGis.WKBPoint:
+      for g in geoms:
+         wkbType = g.wkbType()
+         if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
             pt = g.asPoint()
          else:
             # ritorna una tupla (<The squared cartesian distance>,
@@ -1214,7 +1240,7 @@ class QadSnapper():
       if (self.__startPoint is None) or len(self.__parLines) == 0:
          return result
             
-      p2 = QgsPoint(0, 0)
+      p2 = QgsPointXY(0, 0)
       pt = self.__transformPoint(point, CRS, self.getSnapPointCRS()) # trasformo il punto
      
       for line in self.__parLines:
@@ -1224,9 +1250,9 @@ class QadSnapper():
          diffY = pt2.y() - pt1.y()
                                                   
          if diffX == 0: # se la retta passante per pt1 e pt2 é verticale
-            parPoint = QgsPoint(self.__startPoint.x(), pt.y())
+            parPoint = QgsPointXY(self.__startPoint.x(), pt.y())
          elif diffY == 0: # se la retta passante per pt1 e pt2 é orizzontle
-            parPoint = QgsPoint(pt.x(), self.__startPoint.y())
+            parPoint = QgsPointXY(pt.x(), self.__startPoint.y())
          else:
             # Calcolo l'equazione della retta passante per __startPoint con coefficente angolare noto
             p2.setX(self.__startPoint.x() + diffX)
@@ -1291,14 +1317,14 @@ class QadSnapper():
       (se la distanza >=0 significa verso dall'inizio alla fine della linea,
       se la distanza < 0 significa verso dalla fine all'inizio della linea.
       - CRS = sistema di coordinate in cui sono espressi geom e point (QgsCoordinateReferenceSystem)
-      Ritorna una lista di punti QgsPoint + una lista di coefficienti angolari dei segmenti
+      Ritorna una lista di punti QgsPointXY + una lista di coefficienti angolari dei segmenti
       su cui ricadono i punti
       """
       result = [[],[]]
       if geom is None:
          return result     
 
-      if geom.wkbType() != QGis.WKBLineString:
+      if geom.wkbType() != QgsWkbTypes.LineString:
          return result
       
       ProgressPoints = []
@@ -1617,7 +1643,7 @@ class QadSnapper():
       """
       Trasforma un rettangolo da coordinate layer a coordinate map.
       """
-      point = QgsPoint()
+      point = QgsPointXY()
       point.set(rect.xMinimum(), rect.yMinimum())
       point = mQgsMapRenderer.layerToMapCoordinates(layer, point)
       rect.setXMinimum(point.x())
@@ -1630,11 +1656,11 @@ class QadSnapper():
 
    def __transformPoint(self, point, sourceCRS, destCRS):
       """
-      Trasforma un punto dal sistema di coordinate sorgente a quello di destinazione.
-      sourceCRS e destCRS sono QgsCoordinateReferenceSystem
+      Transform a point from the source coordinate system to the destination system.
+      sourceCRS and destCRS are QgsCoordinateReferenceSystem
       """      
       if (sourceCRS is not None) and (destCRS is not None) and sourceCRS != destCRS:       
-         coordTransform = QgsCoordinateTransform(sourceCRS, destCRS) # trasformo le coord
+         coordTransform = QgsCoordinateTransform(sourceCRS, destCRS,QgsProject.instance()) # trasformo le coord
          return coordTransform.transform(point)
       else:
          return point
@@ -1642,16 +1668,17 @@ class QadSnapper():
 
    def __transformGeomToSnapPointCRS(self, geom, CRS = None):
       """
-      Trasforma la geometria nel sistema di coordinate dei punti di snap
-      CRS é QgsCoordinateReferenceSystem della geometria
+      Transforms the geometry into the snap point coordinate system
+      :param CRS: A CRS of the geometry
+      :type CRS: QgsCoordinateReferenceSystem
       """
       if geom is None:
          return None
       
       g = QgsGeometry(geom)
       if (CRS is not None) and (self.getSnapPointCRS() is not None) and CRS != self.getSnapPointCRS():       
-         coordTransform = QgsCoordinateTransform(CRS, self.getSnapPointCRS()) # trasformo la geometria
-         g.transform(coordTransform)
+         coordTransform = QgsCoordinateTransform(CRS, self.getSnapPointCRS(),QgsProject.instance())
+         return g.transform(coordTransform)
       return g
 
 
@@ -1746,8 +1773,8 @@ class QadSnapper():
       pt1 e pt2 sono QgsPoint
       CRS é QgsCoordinateReferenceSystem opzionale
       """
-      __pt1 = QgsPoint(0, 0)
-      __pt2 = QgsPoint(0, 0)
+      __pt1 = QgsPointXY(0, 0)
+      __pt2 = QgsPointXY(0, 0)
       
       if snapType == QadSnapTypeEnum.EXT:
          lines = self.__extLines
@@ -1905,10 +1932,10 @@ def str2snapTypeEnum(s):
       elif snapTypeStr == QadMsg.translate("Snap", "PAR") or snapTypeStr == "_PAR":
          snapType = snapType | QadSnapTypeEnum.PAR         
       # se inizia per "PR" distanza progressiva
-      elif string.find(snapTypeStr, QadMsg.translate("Snap", "PR")) == 0 or \
-           string.find(snapTypeStr, "_PR") == 0:
+      elif snapTypeStr.find(QadMsg.translate("Snap", "PR")) == 0 or \
+              snapTypeStr.find("_PR") == 0:
          # la parte successiva PR può essere vuota o numerica
-         if string.find(snapTypeStr, QadMsg.translate("Snap", "PR")) == 0:
+         if snapTypeStr.find(QadMsg.translate("Snap", "PR")) == 0:
             param = snapTypeStr[len(QadMsg.translate("Snap", "PR")):]
          else:
             param = snapTypeStr[len("_PR"):]
@@ -1922,11 +1949,70 @@ def str2snapTypeEnum(s):
 
 
 #===============================================================================
-# snapTypeEnum2str
+# snapTypeEnum2Str
 #===============================================================================
-def snapTypeEnum2str(snapType):
+def snapTypeEnum2Str(snapType):
    """
    Ritorna la conversione di un tipo di snap in una stringa.
+   """
+   # "FIN" punti finali di ogni segmento
+   if snapType == QadSnapTypeEnum.END:
+      return QadMsg.translate("Snap", "END")
+   # "FIN_PL" punti finali dell'intera polilinea
+   elif snapType == QadSnapTypeEnum.END_PLINE:
+      return QadMsg.translate("Snap", "END_PL")
+   # "MED" punto medio
+   elif snapType == QadSnapTypeEnum.MID:
+      return QadMsg.translate("Snap", "MID")
+   # "CEN" centro (centroide)
+   elif snapType == QadSnapTypeEnum.CEN:
+      return QadMsg.translate("Snap", "CEN")
+   # "NOD" oggetto punto
+   elif snapType == QadSnapTypeEnum.NOD:
+      return QadMsg.translate("Snap", "NOD")
+   # "QUA" punto quadrante
+   elif snapType == QadSnapTypeEnum.QUA:
+      return QadMsg.translate("Snap", "QUA")
+   # "INT" intersezione
+   elif snapType == QadSnapTypeEnum.INT:
+      return QadMsg.translate("Snap", "INT")
+   # "INS" punto di inserimento
+   elif snapType == QadSnapTypeEnum.INS:
+      return QadMsg.translate("Snap", "INS")
+   # "PER" punto perpendicolare
+   elif snapType == QadSnapTypeEnum.PER:
+      return QadMsg.translate("Snap", "PER")
+   # "TAN" tangente
+   elif snapType == QadSnapTypeEnum.TAN:
+      return QadMsg.translate("Snap", "TAN")
+   # "VIC" punto più vicino
+   elif snapType == QadSnapTypeEnum.NEA:
+      return QadMsg.translate("Snap", "NEA")
+   # "APP" intersezione apparente
+   elif snapType == QadSnapTypeEnum.APP:
+      return QadMsg.translate("Snap", "APP")
+   # "EST" Estensione
+   elif snapType == QadSnapTypeEnum.EXT:
+      return QadMsg.translate("Snap", "EXT")
+   # "PAR" Parallelo
+   elif snapType == QadSnapTypeEnum.PAR:
+      return QadMsg.translate("Snap", "PAR")
+   # "PR" distanza progressiva
+   elif snapType == QadSnapTypeEnum.PR:
+      return QadMsg.translate("Snap", "PR")
+   # "EST_INT" intersezione su estensione
+   elif snapType == QadSnapTypeEnum.EXT_INT:
+      return QadMsg.translate("Snap", "EXT_INT")
+   
+   return ""
+
+
+#===============================================================================
+# snapTypeEnum2Descr
+#===============================================================================
+def snapTypeEnum2Descr(snapType):
+   """
+   Ritorna la conversione di un tipo di snap in una stringa descrittiva.
    """
    # "FIN" punti finali di ogni segmento
    if snapType == QadSnapTypeEnum.END:
@@ -1992,10 +2078,10 @@ def str2snapParams(s):
    for snapTypeStr in snapTypeStrList:
       snapTypeStr = snapTypeStr.strip().upper()
       # se inizia per "PR" distanza progressiva
-      if string.find(snapTypeStr, QadMsg.translate("Snap", "PR")) == 0 or \
-         string.find(snapTypeStr, "_PR") == 0:
+      if snapTypeStr.find(QadMsg.translate("Snap", "PR")) == 0 or \
+              snapTypeStr.find("_PR") == 0:
          # la parte successiva PR può essere vuota o numerica
-         if string.find(snapTypeStr, QadMsg.translate("Snap", "PR")) == 0:
+         if snapTypeStr.find( QadMsg.translate("Snap", "PR")) == 0:
             param = qad_utils.str2float(snapTypeStr[len(QadMsg.translate("Snap", "PR")):]) # fino alla fine della stringa
          else:
             param = qad_utils.str2float(snapTypeStr[len("_PR"):]) # fino alla fine della stringa

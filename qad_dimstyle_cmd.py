@@ -1,40 +1,31 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando DSETTINGS per impostazione stili di quotatura
- 
-                              -------------------
-        begin                : 2015-05-19
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.core import QgsApplication
 
 
-from qad_dimstyle_dlg import QadDIMSTYLEDialog
+from .qad_dimstyle_dlg import QadDIMSTYLEDialog
 
 
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
 
 
 # Classe che gestisce il comando DIMSTYLE
@@ -51,7 +42,7 @@ class QadDIMSTYLECommandClass(QadCommandClass):
       return "DIMSTYLE"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runDIMSTYLECommand)
+      action.triggered.connect(self.plugIn.runDIMSTYLECommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/dimStyle.png")
@@ -64,7 +55,7 @@ class QadDIMSTYLECommandClass(QadCommandClass):
       QadCommandClass.__init__(self, plugIn)
             
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
       Form = QadDIMSTYLEDialog(self.plugIn)

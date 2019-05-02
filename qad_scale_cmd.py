@@ -1,45 +1,35 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando SCALE per scalare oggetti
- 
-                              -------------------
-        begin                : 2013-10-01
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
-
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_scale_maptool import *
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_getpoint import *
-from qad_textwindow import *
-from qad_ssget_cmd import QadSSGetClass
-from qad_entity import *
-import qad_utils
-import qad_layer
-import qad_label
-from qad_dim import *
+from .qad_scale_maptool import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_getpoint import *
+from .qad_textwindow import *
+from .qad_ssget_cmd import QadSSGetClass
+from .qad_entity import *
+from . import qad_utils
+from . import qad_layer
+from . import qad_label
+from .qad_dim import *
 
 
 # Classe che gestisce il comando SCALA
@@ -56,7 +46,7 @@ class QadSCALECommandClass(QadCommandClass):
       return "SCALE"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runSCALECommand)
+      action.triggered.connect(self.plugIn.runSCALECommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/scale.png")
@@ -95,7 +85,7 @@ class QadSCALECommandClass(QadCommandClass):
 
    def getCurrentContextualMenu(self):
       if self.step == 0: # quando si é in fase di selezione entità
-         return self.SSGetClass.getCurrentContextualMenu()
+         return None # return self.SSGetClass.getCurrentContextualMenu()
       else:
          return self.contextualMenu
 
@@ -234,7 +224,7 @@ class QadSCALECommandClass(QadCommandClass):
    
 
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
             
@@ -283,7 +273,7 @@ class QadSCALECommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         self.basePt = QgsPoint(value)
+         self.basePt = QgsPointXY(value)
 
          self.getPointMapTool().basePt = self.basePt
          self.getPointMapTool().entitySet.set(self.entitySet)
@@ -320,8 +310,8 @@ class QadSCALECommandClass(QadCommandClass):
             elif value == QadMsg.translate("Command_SCALE", "Reference") or value == "Reference":
                # si appresta ad attendere la lunghezza di riferimento                      
                self.waitForReferenceLen()
-         elif type(value) == QgsPoint or type(value) == float: # se é stato inserita la scala
-            if type(value) == QgsPoint: # se é stato inserita la scala con un punto
+         elif type(value) == QgsPointXY or type(value) == float: # se é stato inserita la scala
+            if type(value) == QgsPointXY: # se é stato inserita la scala con un punto
                if value == self.basePt:
                   self.showMsg(QadMsg.translate("QAD", "\nThe value must be positive and not zero."))
                   # si appresta ad attendere un punto
@@ -363,8 +353,8 @@ class QadSCALECommandClass(QadCommandClass):
             # si appresta ad attendere la nuova lunghezza                    
             self.waitForNewReferenceLen()
 
-         elif type(value) == QgsPoint: # se é stato inserito la scala con un punto                                 
-            self.Pt1ReferenceLen = QgsPoint(value)
+         elif type(value) == QgsPointXY: # se é stato inserito la scala con un punto
+            self.Pt1ReferenceLen = QgsPointXY(value)
             self.getPointMapTool().Pt1ReferenceLen = self.Pt1ReferenceLen 
             # imposto il map tool
             self.getPointMapTool().setMode(Qad_scale_maptool_ModeEnum.FIRST_PT_KNOWN_ASK_FOR_SECOND_PT_REFERENCE_LEN)
@@ -433,8 +423,8 @@ class QadSCALECommandClass(QadCommandClass):
                # si appresta ad attendere un punto
                self.waitForPoint(QadMsg.translate("Command_SCALE", "Specify first point: "))
                self.step = 7
-         elif type(value) == QgsPoint or type(value) == float: # se é stato inserita la lunghezza
-            if type(value) == QgsPoint: # se é stato inserito la lunghezza con un punto
+         elif type(value) == QgsPointXY or type(value) == float: # se é stato inserita la lunghezza
+            if type(value) == QgsPointXY: # se é stato inserito la lunghezza con un punto
                if value == self.basePt:
                   self.showMsg(QadMsg.translate("QAD", "\nThe value must be positive and not zero."))
                   # si appresta ad attendere un punto
@@ -526,7 +516,7 @@ class QadGRIPSCALECommandClass(QadCommandClass):
    def __init__(self, plugIn):
       QadCommandClass.__init__(self, plugIn)
       self.entitySet = QadEntitySet()
-      self.basePt = QgsPoint()
+      self.basePt = QgsPointXY()
       self.skipToNextGripCommand = False
       self.copyEntities = False
       self.nOperationsToUndo = 0
@@ -706,7 +696,7 @@ class QadGRIPSCALECommandClass(QadCommandClass):
    
 
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
             
@@ -764,8 +754,8 @@ class QadGRIPSCALECommandClass(QadCommandClass):
                self.waitForReferenceLen()
             elif value == QadMsg.translate("Command_GRIPSCALE", "eXit") or value == "eXit":
                return True # fine comando
-         elif type(value) == QgsPoint or type(value) == float: # se é stato inserita la scala
-            if type(value) == QgsPoint: # se é stato inserita la scala con un punto
+         elif type(value) == QgsPointXY or type(value) == float: # se é stato inserita la scala
+            if type(value) == QgsPointXY: # se é stato inserita la scala con un punto
                if value == self.basePt:
                   self.showMsg(QadMsg.translate("QAD", "\nThe value must be positive and not zero."))
                   # si appresta ad attendere un punto
@@ -819,7 +809,7 @@ class QadGRIPSCALECommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         self.basePt = QgsPoint(value)
+         self.basePt = QgsPointXY(value)
 
          self.getPointMapTool().basePt = self.basePt
          # si appresta ad attendere la scala                      
@@ -853,8 +843,8 @@ class QadGRIPSCALECommandClass(QadCommandClass):
             # si appresta ad attendere la nuova lunghezza                    
             self.waitForScale()
 
-         elif type(value) == QgsPoint: # se é stato inserito la scala con un punto                                 
-            self.Pt1ReferenceLen = QgsPoint(value)
+         elif type(value) == QgsPointXY: # se é stato inserito la scala con un punto
+            self.Pt1ReferenceLen = QgsPointXY(value)
             self.getPointMapTool().Pt1ReferenceLen = self.Pt1ReferenceLen 
             # imposto il map tool
             self.getPointMapTool().setMode(Qad_scale_maptool_ModeEnum.FIRST_PT_KNOWN_ASK_FOR_SECOND_PT_REFERENCE_LEN)

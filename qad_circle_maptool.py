@@ -1,42 +1,33 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire il map tool di richiesta di un punto in ambito del comando cerchio
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import math
 
 
-import qad_utils
-from qad_snapper import *
-from qad_snappointsdisplaymanager import *
-from qad_variables import *
-from qad_getpoint import *
-from qad_circle import *
-from qad_rubberband import QadRubberBand
+from . import qad_utils
+from .qad_snapper import *
+from .qad_snappointsdisplaymanager import *
+from .qad_variables import *
+from .qad_getpoint import *
+from .qad_circle import *
+from .qad_rubberband import QadRubberBand
 
 
 #===============================================================================
@@ -87,7 +78,7 @@ class Qad_circle_maptool(QadGetPoint):
       self.startPtForRadius = None
             
       self.__rubberBand = QadRubberBand(self.canvas, False)
-      self.geomType = QGis.Polygon
+      self.geomType = QgsWkbTypes.Polygon
 
    def setRubberBandColor(self, rubberBandBorderColor, rubberBandFillColor):
       if rubberBandBorderColor is not None:
@@ -120,13 +111,11 @@ class Qad_circle_maptool(QadGetPoint):
       # noto il centro del cerchio si richiede il raggio
       if self.mode == Qad_circle_maptool_ModeEnum.CENTER_PT_KNOWN_ASK_FOR_RADIUS:
          radius = qad_utils.getDistance(self.centerPt, self.tmpPoint)
-         circle.set(self.centerPt, radius)
-         result = True
+         result = circle.set(self.centerPt, radius)
       # noto il centro del cerchio si richiede il diametro
       elif self.mode == Qad_circle_maptool_ModeEnum.CENTER_PT_KNOWN_ASK_FOR_DIAM:
          diam = qad_utils.getDistance(self.centerPt, self.tmpPoint)
          result = circle.set(self.centerPt, diam / 2)
-         result = True
       # noto il primo e il secondo punto si richiede il terzo punto
       elif self.mode == Qad_circle_maptool_ModeEnum.FIRST_SECOND_PT_KNOWN_ASK_FOR_THIRD_PT:
          if (self.firstPt is not None) and (self.secondPt is not None):
@@ -146,7 +135,7 @@ class Qad_circle_maptool(QadGetPoint):
          points = circle.asPolyline()
       
          if points is not None:
-            if self.geomType == QGis.Polygon:
+            if self.geomType == QgsWkbTypes.Polygon:
                self.__rubberBand.setPolygon(points)
             else:
                self.__rubberBand.setLine(points)

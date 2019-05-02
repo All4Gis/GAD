@@ -2,12 +2,12 @@
 
 # Form implementation generated from reading ui file 'qad_gripcolor.ui'
 #
-# Created: Wed Oct 12 11:24:06 2016
+# Created: Mon May 14 11:26:29 2018
 #      by: PyQt4 UI code generator 4.10.2
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8

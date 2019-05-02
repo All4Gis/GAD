@@ -1,44 +1,37 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire il map tool di richiesta di un punto
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import math
 import time # profiling
 
 
-import qad_utils
-from qad_snapper import *
-from qad_snappointsdisplaymanager import *
-from qad_entity import *
-from qad_variables import *
-from qad_rubberband import *
-from qad_cacheareas import QadLayerCacheGeomsDict
-from qad_msg import QadMsg
+from . import qad_utils
+from .qad_snapper import *
+from .qad_snappointsdisplaymanager import *
+from .qad_entity import *
+from .qad_variables import *
+from .qad_rubberband import *
+from .qad_cacheareas import QadLayerCacheGeomsDict
+from .qad_textwindow import QadInputTypeEnum
+from .qad_dynamicinput import QadDynamicEditInput, QadDynamicInputContextEnum
+from .qad_msg import QadMsg
 
 
 #===============================================================================
@@ -62,7 +55,7 @@ class QadGetPointDrawModeEnum():
    ELASTIC_RECTANGLE = 2     # rettangolo elastico dal punto __startPoint   
 
 
-from qad_dsettings_dlg import QadDSETTINGSDialog
+from .qad_dsettings_dlg import QadDSETTINGSDialog, QadDSETTINGSTabIndexEnum
 
 
 #===============================================================================
@@ -148,7 +141,10 @@ class QadGetPoint(QgsMapTool):
       self.tempo_tot = 0
       self.tempo1 = 0
       self.tempo2 = 0
-      
+
+      # input dinamico
+      self.dynamicEditInput = QadDynamicEditInput(plugIn, QadDynamicInputContextEnum.NONE)
+
 
    def __del__(self):
       self.removeItems()
@@ -176,8 +172,24 @@ class QadGetPoint(QgsMapTool):
          
       if self.layerCacheGeomsDict is not None: # prima lo stacco dal canvas altrimenti non si rimuove perchè usato da canvas (eventi)
          del self.layerCacheGeomsDict
-         
+         self.layerCacheGeomsDict = None
+
+      if self.dynamicEditInput is not None:
+         self.dynamicEditInput.removeItems()
+         del self.dynamicEditInput
+         self.dynamicEditInput = None
+
    
+   #============================================================================
+   # getDynamicInput
+   #============================================================================
+   def getDynamicInput(self):
+      return self.dynamicEditInput
+   
+   
+   #============================================================================
+   # setDrawMode
+   #============================================================================
    def setDrawMode(self, drawMode):
       self.__drawMode = drawMode
       if self.__RubberBand is not None:
@@ -188,20 +200,26 @@ class QadGetPoint(QgsMapTool):
          
       if self.__drawMode == QadGetPointDrawModeEnum.ELASTIC_LINE:
          self.refreshOrthoMode() # setto il default
-         self.__RubberBand = createRubberBand(self.canvas, QGis.Line)
+         self.__RubberBand = createRubberBand(self.canvas, QgsWkbTypes.LineString)
          self.__RubberBand.setLineStyle(Qt.DotLine)
       elif self.__drawMode == QadGetPointDrawModeEnum.ELASTIC_RECTANGLE:
          self.rectangleCrossingSelectionColor = getColorForCrossingSelectionArea()
          self.rectangleWindowSelectionColor = getColorForWindowSelectionArea()
             
-         self.__RubberBand = createRubberBand(self.canvas, QGis.Polygon, False, None, self.rectangleCrossingSelectionColor)
+         self.__RubberBand = createRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry, False, None, self.rectangleCrossingSelectionColor)
          self.__RubberBand.setLineStyle(Qt.DotLine)
          
 
+   #============================================================================
+   # getDrawMode
+   #============================================================================
    def getDrawMode(self):
       return self.__drawMode
 
 
+   #============================================================================
+   # setSelectionMode
+   #============================================================================
    def setSelectionMode(self, selectionMode):
       self.__selectionMode = selectionMode
       # setto il tipo di cursore
@@ -223,27 +241,45 @@ class QadGetPoint(QgsMapTool):
          self.setCursorType(QadCursorTypeEnum.NONE) # nessun cursore
 
 
+   #============================================================================
+   # getSelectionMode
+   #============================================================================
    def getSelectionMode(self):
       return self.__selectionMode
 
 
+   #============================================================================
+   # hidePointMapToolMarkers
+   #============================================================================
    def hidePointMapToolMarkers(self):
       if self.__QadSnapPointsDisplayManager is not None:
          self.__QadSnapPointsDisplayManager.hide()
       if self.__RubberBand is not None:
          self.__RubberBand.hide()
 
+
+   #============================================================================
+   # showPointMapToolMarkers
+   #============================================================================
    def showPointMapToolMarkers(self):
       if self.__RubberBand is not None:
          self.__RubberBand.show()
 
+
+   #============================================================================
+   # getPointMapToolMarkersCount
+   #============================================================================
    def getPointMapToolMarkersCount(self):
       if self.__RubberBand is None:
          return 0
       else:
          return self.__RubberBand.numberOfVertices()
+
                              
-   def clear(self):     
+   #============================================================================
+   # clear
+   #============================================================================
+   def clear(self):
       self.hidePointMapToolMarkers()
       if self.__RubberBand is not None:
          self.canvas.scene().removeItem(self.__RubberBand) # prima lo stacco dal canvas altrimenti non si rimuove perchè usato da canvas
@@ -310,16 +346,24 @@ class QadGetPoint(QgsMapTool):
       del self.tmpGeometries[:] # svuoto la lista
       self.__QadSnapper.clearTmpGeometries()
 
+
+   #============================================================================
+   # setTmpGeometry
+   #============================================================================
    def setTmpGeometry(self, geom, CRS = None):
       self.clearTmpGeometries()
       self.appendTmpGeometry(geom, CRS)
-            
+
+
+   #============================================================================
+   # appendTmpGeometry
+   #============================================================================
    def appendTmpGeometry(self, geom, CRS = None):
       if geom is None:
          return
       if CRS is not None and CRS != self.canvas.mapSettings().destinationCrs():
          g = QgsGeometry(geom)
-         coordTransform = QgsCoordinateTransform(CRS, self.canvas.mapSettings().destinationCrs()) # trasformo la geometria
+         coordTransform = QgsCoordinateTransform(CRS, self.canvas.mapSettings().destinationCrs(),QgsProject.instance()) # trasformo la geometria
          g.transform(coordTransform)
          self.tmpGeometries.append(g)
       else:
@@ -328,7 +372,10 @@ class QadGetPoint(QgsMapTool):
       self.__QadSnapper.appendTmpGeometry(geom)
       
 
-   def setTmpGeometries(self, geoms, CRS = None):      
+   #============================================================================
+   # setTmpGeometries
+   #============================================================================
+   def setTmpGeometries(self, geoms, CRS = None):
       self.clearTmpGeometries()
       for g in geoms:
          self.appendTmpGeometry(g, CRS)
@@ -347,9 +394,16 @@ class QadGetPoint(QgsMapTool):
       self.updateLayerCacheOnMapCanvasExtent()
       
 
+   #============================================================================
+   # getSnapType
+   #============================================================================
    def getSnapType(self):
       return self.__QadSnapper.getSnapType()
 
+
+   #============================================================================
+   # forceSnapTypeOnce
+   #============================================================================
    def forceSnapTypeOnce(self, snapType = None, snapParams = None):
       self.__oldSnapType = self.__QadSnapper.getSnapType()
       self.__oldSnapProgrDist = self.__QadSnapper.getProgressDistance()
@@ -375,6 +429,10 @@ class QadGetPoint(QgsMapTool):
             
       self.setSnapType(snapType)
 
+
+   #============================================================================
+   # refreshSnapType
+   #============================================================================
    def refreshSnapType(self):
       self.__oldSnapType = None
       self.__oldSnapProgrDist = None
@@ -391,13 +449,21 @@ class QadGetPoint(QgsMapTool):
       else:
          self.__OrthoMode = orthoMode
 
+
+   #============================================================================
+   # getOrthoCoord
+   #============================================================================
    def getOrthoCoord(self, point):
       if math.fabs(point.x() - self.__startPoint.x()) < \
          math.fabs(point.y() - self.__startPoint.y()):
-         return QgsPoint(self.__startPoint.x(), point.y())
+         return QgsPointXY(self.__startPoint.x(), point.y())
       else:
-         return QgsPoint(point.x(), self.__startPoint.y())
+         return QgsPointXY(point.x(), self.__startPoint.y())
 
+
+   #============================================================================
+   # refreshOrthoMode
+   #============================================================================
    def refreshOrthoMode(self):
       self.setOrthoMode()
 
@@ -438,12 +504,22 @@ class QadGetPoint(QgsMapTool):
 
 
    #============================================================================
+   # Dynamic Input
+   #============================================================================
+   def refreshDynamicInput(self):
+      self.dynamicEditInput.refreshOnEnvVariables()
+
+
+   #============================================================================
    # AutoSnap
    #============================================================================
    def setPolarAngOffset(self, polarAngOffset):
       self.__PolarAngOffset = polarAngOffset # per gestire l'angolo relativo all'ultimo segmento
 
       
+   #============================================================================
+   # getRealPolarAng
+   #============================================================================
    def getRealPolarAng(self):
       # ritorna l'angolo polare che veramente deve essere usato tenendo conto delle variabili di sistema
       if self.__AutoSnap is None: return None
@@ -456,6 +532,9 @@ class QadGetPoint(QgsMapTool):
          return math.pi / 2 # 90 gradi (ortogonale)
 
 
+   #============================================================================
+   # getRealPolarAngOffset
+   #============================================================================
    def getRealPolarAngOffset(self):
       # ritorna l'angolo polare di offset che veramente deve essere usato tenendo conto delle variabili di sistema
       if self.__AutoSnap is None: return None
@@ -468,7 +547,7 @@ class QadGetPoint(QgsMapTool):
       
 
    #============================================================================
-   # CursorType
+   # setCursorType
    #============================================================================
    def setCursorType(self, cursorType):
       if self.__csrRubberBand is not None:
@@ -482,12 +561,16 @@ class QadGetPoint(QgsMapTool):
          self.__cursor = QCursor(Qt.BlankCursor)
       self.__cursorType = cursorType
       
+
+   #============================================================================
+   # getCursorType
+   #============================================================================
    def getCursorType(self):
       return self.__cursorType
 
     
    #============================================================================
-   # Elastic
+   # moveElastic
    #============================================================================
    def moveElastic(self, point):
       numberOfVertices = self.__RubberBand.numberOfVertices()
@@ -509,23 +592,28 @@ class QadGetPoint(QgsMapTool):
                   self.__RubberBand.setFillColor(self.rectangleCrossingSelectionColor)
             
             adjustedPoint = qad_utils.getAdjustedRubberBandVertex(p1, point)                     
-            self.__RubberBand.movePoint(numberOfVertices - 3, QgsPoint(p1.x(), adjustedPoint.y()))
+            self.__RubberBand.movePoint(numberOfVertices - 3, QgsPointXY(p1.x(), adjustedPoint.y()))
             self.__RubberBand.movePoint(numberOfVertices - 2, adjustedPoint)
-            self.__RubberBand.movePoint(numberOfVertices - 1, QgsPoint(adjustedPoint.x(), p1.y()))            
+            self.__RubberBand.movePoint(numberOfVertices - 1, QgsPointXY(adjustedPoint.x(), p1.y()))
 
             
    #============================================================================
-   # setStartPoint
+   # getStartPoint
    #============================================================================
    def getStartPoint(self):
-      return None if self.__startPoint is None else QgsPoint(self.__startPoint) # alloca
+      return None if self.__startPoint is None else QgsPointXY(self.__startPoint) # alloca
+   
+   
+   #============================================================================
+   # setStartPoint
+   #============================================================================
    def setStartPoint(self, startPoint):
       self.__startPoint = startPoint
       self.__QadSnapper.setStartPoint(startPoint)
       
       if self.getDrawMode() == QadGetPointDrawModeEnum.ELASTIC_LINE:
          # previsto uso della linea elastica
-         self.__RubberBand.reset(QGis.Line)
+         self.__RubberBand.reset(QgsWkbTypes.LineGeometry)
          #numberOfVertices = self.__RubberBand.numberOfVertices()
          #if numberOfVertices == 2:
          #   self.__RubberBand.removeLastPoint()
@@ -539,11 +627,16 @@ class QadGetPoint(QgsMapTool):
          point = qad_utils.getAdjustedRubberBandVertex(startPoint, point)
                 
          self.__RubberBand.addPoint(point, True)
+         
+         # input dinamico
+         self.dynamicEditInput.setPrevPoint(startPoint)
+         if self.dynamicEditInput.isActive() and self.dynamicEditInput.isVisible:
+            self.dynamicEditInput.show(True, self.canvas.mouseLastXY()) # visualizzo e resetto input dinamico
       elif self.getDrawMode() == QadGetPointDrawModeEnum.ELASTIC_RECTANGLE:
          # previsto uso del rettangolo elastico
          point = self.toMapCoordinates(self.canvas.mouseLastXY())
 
-         self.__RubberBand.reset(QGis.Polygon)
+         self.__RubberBand.reset(QgsWkbTypes.PolygonGeometry)
          self.__RubberBand.addPoint(startPoint, False)
          
          # per un baco non ancora capito: se la linea ha solo 2 vertici e 
@@ -551,9 +644,16 @@ class QadGetPoint(QgsMapTool):
          # la linea non viene disegnata perciò sposto un pochino la x o la y
          point = qad_utils.getAdjustedRubberBandVertex(startPoint, point)
                 
-         self.__RubberBand.addPoint(QgsPoint(startPoint.x(), point.y()), False)
+         self.__RubberBand.addPoint(QgsPointXY(startPoint.x(), point.y()), False)
          self.__RubberBand.addPoint(point, False)
-         self.__RubberBand.addPoint(QgsPoint(point.x(), startPoint.y()), True)
+         self.__RubberBand.addPoint(QgsPointXY(point.x(), startPoint.y()), True)
+
+         # input dinamico
+         self.dynamicEditInput.setPrevPoint(None)
+      else:
+         #input dinamico
+         self.dynamicEditInput.setPrevPoint(None)
+         
          
       self.__QadSnapPointsDisplayManager.setStartPoint(startPoint)
 
@@ -611,7 +711,8 @@ class QadGetPoint(QgsMapTool):
       self.tmpCtrlKey = True if event.modifiers() & Qt.ControlModifier else False
       
       # se l'obiettivo é selezionare un punto
-      if self.getSelectionMode() == QadGetPointSelectionModeEnum.POINT_SELECTION:
+      if self.getSelectionMode() == QadGetPointSelectionModeEnum.POINT_SELECTION or \
+         self.getSelectionMode() == QadGetPointSelectionModeEnum.ENTITYSET_SELECTION:
          return self.canvasMoveEventOnPointSel(event)
       elif self.getSelectionMode() == QadGetPointSelectionModeEnum.NONE:
          pass
@@ -624,6 +725,7 @@ class QadGetPoint(QgsMapTool):
    # canvasMoveEventOnEntitySel
    #============================================================================
    def canvasMoveEventOnEntitySel(self, event):
+      self.dynamicEditInput.mouseMoveEvent(event.pos())
       # start = time.time() # test
       self.tmpEntity.clear()
 
@@ -662,6 +764,8 @@ class QadGetPoint(QgsMapTool):
    # canvasMoveEventOnPointSel
    #============================================================================
    def canvasMoveEventOnPointSel(self, event):
+      self.dynamicEditInput.mouseMoveEvent(event.pos())
+
       # start = time.time() # test     
       result = qad_utils.getEntSel(event.pos(), self, \
                                    QadVariables.get(QadMsg.translate("Environment variables", "APERTURE")), \
@@ -679,6 +783,7 @@ class QadGetPoint(QgsMapTool):
          feature = result[0]
          layer = result[1]
          self.lastLayerFound = layer
+         self.tmpEntity.set(layer, feature.attribute("index")) # leggendo la feature dalla cache in index trovo il codice della feature reale  
          geometry = feature.geometry()
          point = self.toLayerCoordinates(layer, event.pos())
          
@@ -687,6 +792,7 @@ class QadGetPoint(QgsMapTool):
                                                         None, \
                                                         self.getRealPolarAng(), \
                                                         self.getRealPolarAngOffset())
+
          # Cerco solo il punto più vicino
          oSnapPoints = self.__QadSnapper.getNearestPoints(self.tmpPoint, allSnapPoints)
 
@@ -764,7 +870,7 @@ class QadGetPoint(QgsMapTool):
                                               self.__QadSnapper.getIntExtArc(), \
                                               self.__QadSnapper.getOSnapPointsForPolar(), \
                                               self.__QadSnapper.getOSnapLinesForPolar())
-      
+
       self.point = None
       self.tmpPoint = None
       # memorizzo il punto di snap in point (prendo il primo valido)
@@ -775,8 +881,15 @@ class QadGetPoint(QgsMapTool):
             oSnapPoint = points[0]
             break
       
+      # se non è stato trovato alcun punto di osnap
       if self.tmpPoint is None:
-         self.tmpPoint = self.toMapCoordinates(event.pos())
+         # se si sta usando input dinamico che restituisce un risultato puntuale
+         if self.dynamicEditInput.isActive() and self.dynamicEditInput.isVisible and \
+            (self.dynamicEditInput.inputType & QadInputTypeEnum.POINT2D or self.dynamicEditInput.inputType & QadInputTypeEnum.POINT3D) and \
+            self.dynamicEditInput.refreshResult(event.pos()) == True:
+            self.tmpPoint = QgsPointXY(self.dynamicEditInput.resPt)
+         else: # prendo il punto direttamente dal mouse
+            self.tmpPoint = self.toMapCoordinates(event.pos())
 
       if oSnapPoint is None: # se non c'è un punto di osnap
          if self.__startPoint is not None: # se c'é un punto di partenza
@@ -794,6 +907,9 @@ class QadGetPoint(QgsMapTool):
       # self.tempo_tot += ((time.time() - start) * 1000) # test
 
 
+   #============================================================================
+   # canvasPressEvent
+   #============================================================================
    def canvasPressEvent(self, event):
       # tasto shift premuto durante il click del mouse
       self.shiftKey = True if event.modifiers() & Qt.ShiftModifier else False
@@ -848,6 +964,10 @@ class QadGetPoint(QgsMapTool):
       self.plugIn.QadCommands.continueCommandFromMapTool()
       #self.plugIn.setStandardMapTool()
 
+
+   #============================================================================
+   # canvasReleaseEvent
+   #============================================================================
    def canvasReleaseEvent(self, event):
       # se l'obiettivo é selezionare un rettangolo
       if self.getDrawMode() == QadGetPointDrawModeEnum.ELASTIC_RECTANGLE:                 
@@ -875,8 +995,12 @@ class QadGetPoint(QgsMapTool):
                self.plugIn.QadCommands.continueCommandFromMapTool()
                #self.plugIn.setStandardMapTool()
 
+
+   #============================================================================
+   # __setPoint
+   #============================================================================
    def __setPoint(self, event):
-      # se non era mai stato mosso il mouse     
+      # if the mouse had never been moved
       if self.tmpPoint is None:        
          self.canvasMoveEvent(event)
 
@@ -884,10 +1008,18 @@ class QadGetPoint(QgsMapTool):
       self.plugIn.setLastPoint(self.point)
       self.snapTypeOnSelection = self.getSnapType() # snap attivo al momento del click     
       self.entity.set(self.tmpEntity.layer, self.tmpEntity.featureId)
-    
+
+
+   #============================================================================
+   # keyPressEvent
+   #============================================================================
    def keyPressEvent(self, event):
       self.plugIn.keyPressEvent(event)
-    
+
+
+   #============================================================================
+   # activate
+   #============================================================================
    def activate(self):
       self.canvas.setToolTip("")
 
@@ -913,24 +1045,42 @@ class QadGetPoint(QgsMapTool):
       self.rightButton = False
       self.canvas.setCursor(self.__cursor)
       self.showPointMapToolMarkers()
+      #self.plugIn.enableShortcut()
+      
+      self.dynamicEditInput.show(True)
 
+
+   #============================================================================
+   # deactivate
+   #============================================================================
    def deactivate(self):
       try: # necessario perché se si chiude QGIS parte questo evento nonostante non ci sia più l'oggetto maptool !
          if self.__csrRubberBand is not None:
             self.__csrRubberBand.hide()
          self.hidePointMapToolMarkers()
+         #self.plugIn.disableShortcut()
+         
+         self.dynamicEditInput.show(False)
       except:
          pass
 
-   def isTransient(self):
+
+   #============================================================================
+   # isTransient
+   #============================================================================
+   def isTransient(self): # Check whether this MapTool performs a zoom or pan operation
       return False
 
+
+   #============================================================================
+   # isEditTool
+   #============================================================================
    def isEditTool(self):
       # benchè questo tool faccia editing ritorno False perchè ogni volta che seleziono una feature
       # con la funzione QgsVectorLayer::select(QgsFeatureId featureId)
       # parte in sequenza la chiamata a isEditTool del tool corrente che se ritorna true viene disattivato
       # e poi riattivato QadMapTool che riprende il comando interrotto creando casino
-      #return True 2016
+      #return True # 2016
       return False
       
 
@@ -1082,7 +1232,7 @@ class QadGetPoint(QgsMapTool):
       popupMenu.addSeparator()
 
       msg = QadMsg.translate("DSettings_Dialog", "Object snap settings...")
-      icon = QIcon(":/plugins/qad/icons/dsettings.png")
+      icon = QIcon(":/plugins/qad/icons/dsettings.svg")
       if icon is None:
          DSettingsAction = QAction(msg, popupMenu)
       else:
@@ -1097,12 +1247,16 @@ class QadGetPoint(QgsMapTool):
    # addSnapTypeByPopupMenu
    #============================================================================
    def addSnapTypeByPopupMenu(self, _snapType):
-      value = QadVariables.get(QadMsg.translate("Environment variables", "OSMODE"))
-      if value & QadSnapTypeEnum.DISABLE:
-         value =  value - QadSnapTypeEnum.DISABLE      
-      QadVariables.set(QadMsg.translate("Environment variables", "OSMODE"), value | _snapType)
-      QadVariables.save()      
-      self.refreshSnapType()
+      # la funzione deve impostare lo snap ad oggetto solo temporaneamente
+      str = snapTypeEnum2Str(_snapType)
+      self.plugIn.showEvaluateMsg(str)
+      return
+#       value = QadVariables.get(QadMsg.translate("Environment variables", "OSMODE"))
+#       if value & QadSnapTypeEnum.DISABLE:
+#          value =  value - QadSnapTypeEnum.DISABLE      
+#       QadVariables.set(QadMsg.translate("Environment variables", "OSMODE"), value | _snapType)
+#       QadVariables.save()      
+#       self.refreshSnapType()
          
    def addEndLineSnapTypeByPopupMenu(self):
       self.addSnapTypeByPopupMenu(QadSnapTypeEnum.END_PLINE)
@@ -1133,44 +1287,60 @@ class QadGetPoint(QgsMapTool):
    def addPrSnapTypeByPopupMenu(self):
       self.addSnapTypeByPopupMenu(QadSnapTypeEnum.PR)
 
-   def setSnapTypeToDisableByPopupMenu(self):
+
+   #============================================================================
+   # setSnapTypeToDisableByPopupMenu
+   #============================================================================
+   def setSnapTypeToDisableByPopupMenu(self):      
       value = QadVariables.get(QadMsg.translate("Environment variables", "OSMODE"))
       QadVariables.set(QadMsg.translate("Environment variables", "OSMODE"), value | QadSnapTypeEnum.DISABLE)
       QadVariables.save()      
       self.refreshSnapType()
 
+
+   #============================================================================
+   # showDSettingsByPopUpMenu
+   #============================================================================
    def showDSettingsByPopUpMenu(self):
-      d = QadDSETTINGSDialog(self.plugIn)
+      d = QadDSETTINGSDialog(self.plugIn, QadDSETTINGSTabIndexEnum.OBJECT_SNAP)
       d.exec_()
       self.refreshSnapType()
       self.refreshAutoSnap()
       self.setPolarAngOffset(self.plugIn.lastSegmentAng)
+      self.refreshDynamicInput()
 
 
+   #============================================================================
+   # mapToLayerCoordinates
+   #============================================================================
    def mapToLayerCoordinates(self, layer, point_geom):
       # transform point o geometry coordinates from output CRS to layer's CRS 
       if self.canvas is None:
          return None
-      if type(point_geom) == QgsPoint:
+      if type(point_geom) == QgsPointXY:
          return self.canvas.mapSettings().mapToLayerCoordinates(layer, point_geom)
       elif type(point_geom) == QgsGeometry:
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
-         coordTransform = QgsCoordinateTransform(self.canvas.mapSettings().destinationCrs(), layer.crs())
+         coordTransform = QgsCoordinateTransform(self.canvas.mapSettings().destinationCrs(), layer.crs(),QgsProject.instance())
          g = QgsGeometry(point_geom)
          g.transform(coordTransform)
          return g
       else:
          return None
 
+
+   #============================================================================
+   # layerToMapCoordinates
+   #============================================================================
    def layerToMapCoordinates(self, layer, point_geom):
       # transform point o geometry coordinates from layer's CRS to output CRS 
       if self.canvas is None:
          return None
-      if type(point_geom) == QgsPoint:
+      if type(point_geom) == QgsPointXY:
          return self.canvas.mapSettings().layerToMapCoordinates(layer, point_geom)
       elif type(point_geom) == QgsGeometry:
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
-         coordTransform = QgsCoordinateTransform(layer.crs(), self.canvas.mapSettings().destinationCrs())
+         coordTransform = QgsCoordinateTransform(layer.crs(), self.canvas.mapSettings().destinationCrs(),QgsProject.instance())
          g = QgsGeometry(point_geom)
          g.transform(coordTransform)
          return g

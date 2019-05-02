@@ -1,35 +1,26 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per le traduzioni dei messaggi
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import * # for QDesktopServices
+from PyQt5.QtCore import *
+from PyQt5.QtGui import * # for QDesktopServices
 import os.path
 
 import urllib
 import platform
-
+import sys
 
 # traduction class.
 class QadMsgClass():
@@ -42,7 +33,7 @@ class QadMsgClass():
    #============================================================================
    # translate
    #============================================================================
-   def translate(self, context, sourceText, disambiguation = None, encoding = QCoreApplication.UnicodeUTF8, n = -1):
+   def translate(self, context, sourceText, disambiguation = None, n = -1):
       # da usare in una riga senza accoppiarla ad altre chiamate ad esempio (per lupdate.exe che altrimenti non le trova):
       # NON VA BENE
       #     proplist["blockScale"] = [QadMsg.translate("Dimension", "Scala frecce"), \
@@ -62,7 +53,7 @@ class QadMsgClass():
       # "Dimension" per le quotature
       # "Environment variables" per i nomi delle variabili di ambiente
       # "Help" per i titoli dei capitoli del manuale che servono da section nel file html di help
-      return QCoreApplication.translate(context, sourceText, disambiguation, encoding, n)
+      return QCoreApplication.translate(context, sourceText, disambiguation, n)
 
 
 #===============================================================================
@@ -110,11 +101,15 @@ def qadShowPluginHelp(section = "", filename = "index", packageName = None):
       # la funzione QDesktopServices.openUrl in windows non apre la sezione
       if platform.system() == "Windows":
          import subprocess
-         from _winreg import HKEY_CURRENT_USER, OpenKey, QueryValue
+         from winreg import HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, OpenKey, QueryValue
          # In Py3, this module is called winreg without the underscore
          
-         with OpenKey(HKEY_CURRENT_USER, r"Software\Classes\http\shell\open\command") as key:
-            cmd = QueryValue(key, None)
+         try: # provo a livello di utente
+            with OpenKey(HKEY_CURRENT_USER, r"Software\Classes\http\shell\open\command") as key:
+               cmd = QueryValue(key, None)
+         except: # se non c'era a livello di utente provo a livello di macchina
+            with OpenKey(HKEY_LOCAL_MACHINE, r"Software\Classes\http\shell\open\command") as key:
+               cmd = QueryValue(key, None)
    
          if cmd.find("\"%1\"") >= 0:
             subprocess.Popen(cmd.replace("%1", url))

@@ -1,44 +1,35 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando TRIM per tagliare o estendere oggetti grafici
- 
-                              -------------------
-        begin                : 2013-07-15
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_getpoint import *
-from qad_textwindow import *
-from qad_pline_cmd import QadPLINECommandClass
-from qad_rectangle_cmd import QadRECTANGLECommandClass
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-import qad_utils
-import qad_layer
-from qad_ssget_cmd import QadSSGetClass
-from qad_dim import QadDimStyles
+from .qad_getpoint import *
+from .qad_textwindow import *
+from .qad_pline_cmd import QadPLINECommandClass
+from .qad_rectangle_cmd import QadRECTANGLECommandClass
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from . import qad_utils
+from . import qad_layer
+from .qad_ssget_cmd import QadSSGetClass
+from .qad_dim import QadDimStyles
 
 
 # Classe che gestisce il comando TRIM
@@ -55,7 +46,7 @@ class QadTRIMCommandClass(QadCommandClass):
       return "TRIM"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runTRIMCommand)
+      action.triggered.connect(self.plugIn.runTRIMCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/trim.png")
@@ -117,7 +108,7 @@ class QadTRIMCommandClass(QadCommandClass):
             # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
             f_geom = self.layerToMapCoordinates(layer, f.geometry())
             
-            if geom.type() == QGis.Point:
+            if geom.type() == QgsWkbTypes.Point:
                # ritorna una tupla (<The squared cartesian distance>,
                #                    <minDistPoint>
                #                    <afterVertex>
@@ -150,7 +141,7 @@ class QadTRIMCommandClass(QadCommandClass):
                      line1 = result[0]
                      line2 = result[1]
                      atSubGeom = result[2]
-                     if layer.geometryType() == QGis.Line:
+                     if layer.geometryType() == QgsWkbTypes.LineGeometry:
                         updGeom = qad_utils.setSubGeom(f_geom, line1, atSubGeom)
                         if updGeom is None:
                            self.plugIn.destroyEditCommand()
@@ -173,7 +164,7 @@ class QadTRIMCommandClass(QadCommandClass):
                      else:
                         # aggiungo le linee nei layer temporanei di QAD
                         if LineTempLayer is None:
-                           LineTempLayer = qad_layer.createQADTempLayer(self.plugIn, QGis.Line)
+                           LineTempLayer = qad_layer.createQADTempLayer(self.plugIn, QgsWkbTypes.LineGeometry)
                            self.plugIn.addLayerToLastEditCommand("Feature trimmed", LineTempLayer)
                         
                         lineGeoms = [line1]
@@ -216,7 +207,7 @@ class QadTRIMCommandClass(QadCommandClass):
       # solo layer lineari editabili che non appartengano a quote
       layerList = []
       for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
-         if layer.geometryType() == QGis.Line and layer.isEditable():
+         if layer.geometryType() == QgsWkbTypes.LineGeometry and layer.isEditable():
             if len(QadDimStyles.getDimListByLayer(layer)) == 0:
                layerList.append(layer)
             
@@ -244,7 +235,7 @@ class QadTRIMCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
 
@@ -321,7 +312,7 @@ class QadTRIMCommandClass(QadCommandClass):
                keyWords = QadMsg.translate("Command_TRIM", "Extend") + "/" + \
                           QadMsg.translate("Command_TRIM", "No extend")
                if self.edgeMode == 0: # 0 = nessuna estensione
-                  self.defaultValue = QadMsg.translate("Command_TRIM", "No")
+                  self.defaultValue = QadMsg.translate("Command_TRIM", "No extend")
                else: 
                   self.defaultValue = QadMsg.translate("Command_TRIM", "Extend")
                prompt = QadMsg.translate("Command_TRIM", "Specify an extension mode [{0}] <{1}>: ").format(keyWords, self.defaultValue)                        
@@ -342,7 +333,7 @@ class QadTRIMCommandClass(QadCommandClass):
                   self.plugIn.undoEditCommand()
                else:
                   self.showMsg(QadMsg.translate("QAD", "\nThe command has been canceled."))
-         elif type(value) == QgsPoint: # se é stato selezionato un punto
+         elif type(value) == QgsPointXY: # se é stato selezionato un punto
             self.entitySet.clear()
             if self.getPointMapTool().entity.isInitialized():
                self.entitySet.addEntity(self.getPointMapTool().entity)
@@ -353,7 +344,7 @@ class QadTRIMCommandClass(QadCommandClass):
                # solo layer lineari editabili che non appartengano a quote
                layerList = []
                for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
-                  if layer.geometryType() == QGis.Line and layer.isEditable():
+                  if layer.geometryType() == QgsWkbTypes.LineGeometry and layer.isEditable():
                      if len(QadDimStyles.getDimListByLayer(layer)) == 0:
                         layerList.append(layer)
                
@@ -390,7 +381,7 @@ class QadTRIMCommandClass(QadCommandClass):
                self.entitySet = qad_utils.getSelSet("F", self.getPointMapTool(), self.PLINECommand.vertices, \
                                                     None, False, True, False, \
                                                     True)            
-               self.trimFeatures(QgsGeometry.fromPolyline(self.PLINECommand.vertices), ToExtend)
+               self.trimFeatures(QgsGeometry.fromPolylineXY(self.PLINECommand.vertices), ToExtend)
             del self.PLINECommand
             self.PLINECommand = None
 
@@ -415,7 +406,7 @@ class QadTRIMCommandClass(QadCommandClass):
                self.entitySet = qad_utils.getSelSet("F", self.getPointMapTool(), self.RECTANGLECommand.vertices, \
                                                     None, False, True, False, \
                                                     True)            
-               self.trimFeatures(QgsGeometry.fromPolyline(self.RECTANGLECommand.vertices), ToExtend)
+               self.trimFeatures(QgsGeometry.fromPolylineXY(self.RECTANGLECommand.vertices), ToExtend)
             del self.RECTANGLECommand
             self.RECTANGLECommand = None
 
@@ -441,7 +432,7 @@ class QadTRIMCommandClass(QadCommandClass):
             value = msg
 
          if type(value) == unicode:
-            if value == QadMsg.translate("Command_TRIM", "No") or value == "No":
+            if value == QadMsg.translate("Command_TRIM", "No extend") or value == "No extend":
                self.edgeMode = 0
                QadVariables.set(QadMsg.translate("Environment variables", "EDGEMODE"), self.edgeMode)
                QadVariables.save()

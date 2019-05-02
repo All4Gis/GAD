@@ -1,39 +1,30 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per la gestione degli archi
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import math
 
 
-import qad_utils
-from qad_circle import *
-from qad_variables import *
-from qad_msg import QadMsg
+from . import qad_utils
+from .qad_circle import *
+from .qad_variables import *
+from .qad_msg import QadMsg
 
 
 #===============================================================================
@@ -48,25 +39,25 @@ class QadArc():
          self.center = None
          self.radius = None
          self.startAngle = None
-         self.endAngle = None     
+         self.endAngle = None
 
    def whatIs(self):
       return "ARC"
    
    def set(self, center, radius, startAngle, endAngle):
-      self.center = QgsPoint(center)
+      self.center = QgsPointXY(center)
       self.radius = radius
       self.startAngle = startAngle
       self.endAngle = endAngle     
 
    def transform(self, coordTransform):
-      """Transform this geometry as described by CoordinateTranasform ct."""
+      """Transform this geometry as described by CoordinateTransform ct."""
       self.center = coordTransform.transform(self.center)      
 
    def transformFromCRSToCRS(self, sourceCRS, destCRS):
       """Transform this geometry as described by CRS."""
       if (sourceCRS is not None) and (destCRS is not None) and sourceCRS != destCRS:       
-         coordTransform = QgsCoordinateTransform(sourceCRS, destCRS) # trasformo le coord
+         coordTransform = QgsCoordinateTransform(sourceCRS, destCRS,QgsProject.instance()) # trasformo le coord
          self.center = coordTransform.transform(self.center)
       
    def __eq__(self, arc):
@@ -150,24 +141,32 @@ class QadArc():
       return qad_utils.getPolarPointByPtAngle(self.center, angle, self.radius)
 
 
+   def getPtFromEnd(self, distance):
+      # la funzione restituisce un punto sull'arco ad una distanza nota da punto finale
+      # (2*pi) : (2*pi*r) = angle : distance
+      angle = distance / self.radius
+      angle = self.endAngle + angle
+      return qad_utils.getPolarPointByPtAngle(self.center, angle, self.radius)
+
+
    def getQuadrantPoints(self):
       result = []      
 
       angle = 0
       if qad_utils.isAngleBetweenAngles(self.startAngle, self.endAngle, angle) == True:
-         result.append(QgsPoint(self.center.x() + self.radius, self.center.y()))
+         result.append(QgsPointXY(self.center.x() + self.radius, self.center.y()))
          
       angle = math.pi / 2
       if qad_utils.isAngleBetweenAngles(self.startAngle, self.endAngle, angle) == True:
-         result.append(QgsPoint(self.center.x(), self.center.y() + self.radius))
+         result.append(QgsPointXY(self.center.x(), self.center.y() + self.radius))
          
       angle = math.pi
       if qad_utils.isAngleBetweenAngles(self.startAngle, self.endAngle, angle) == True:
-         result.append(QgsPoint(self.center.x() - self.radius, self.center.y()))
+         result.append(QgsPointXY(self.center.x() - self.radius, self.center.y()))
 
       angle = math.pi * 3 / 2
       if qad_utils.isAngleBetweenAngles(self.startAngle, self.endAngle, angle) == True:
-         result.append(QgsPoint(self.center.x(), self.center.y() - self.radius))
+         result.append(QgsPointXY(self.center.x(), self.center.y() - self.radius))
 
       return result
 
@@ -351,7 +350,7 @@ class QadArc():
       """
       points = [startPt, secondPt, endPt]
       # lista di punti, parte dal punto 0, almeno 2 segmenti
-      if self.fromPolyline(points, 0, 2) is None:
+      if self.fromPolylineXY(points, 0, 2) is None:
          return False
       else:
          return True
@@ -589,7 +588,7 @@ class QadArc():
    #============================================================================
    # fromPolyline
    #============================================================================
-   def fromPolyline(self, points, startVertex, atLeastNSegment = None):
+   def fromPolylineXY(self, points, startVertex, atLeastNSegment = None):
       """
       setta le caratteristiche del primo arco incontrato nella lista di punti
       partendo dalla posizione startVertex (0-indexed)
@@ -776,13 +775,13 @@ class QadArcList():
       self.clear()
       startVertex = 0
       arc = QadArc()
-      startEndVertices = arc.fromPolyline(points, startVertex, _atLeastNSegment)
+      startEndVertices = arc.fromPolylineXY(points, startVertex, _atLeastNSegment)
       while startEndVertices is not None:
          _arc = QadArc(arc) # ne faccio una copia
          self.arcList.append(_arc)
          self.startEndVerticesList.append(startEndVertices)
          startVertex = startEndVertices[1] # l'ultimo punto dell'arco
-         startEndVertices = arc.fromPolyline(points, startVertex, _atLeastNSegment)               
+         startEndVertices = arc.fromPolylineXY(points, startVertex, _atLeastNSegment)
 
       return len(self.arcList)
 
@@ -808,13 +807,13 @@ class QadArcList():
       for g in geoms:
          points = g.asPolyline() # vettore di punti
          startVertex = 0
-         startEndVertices = arc.fromPolyline(points, startVertex, _atLeastNSegment)
+         startEndVertices = arc.fromPolylineXY(points, startVertex, _atLeastNSegment)
          while startEndVertices is not None:
             _arc = QadArc(arc) # ne faccio una copia
             self.arcList.append(_arc)
             self.startEndVerticesList.append([startEndVertices[0] + incremental, startEndVertices[1] + incremental])
             startVertex = startEndVertices[1] # l'ultimo punto dell'arco
-            startEndVertices = arc.fromPolyline(points, startVertex, _atLeastNSegment)
+            startEndVertices = arc.fromPolylineXY(points, startVertex, _atLeastNSegment)
                            
          incremental = len(points) - 1
 

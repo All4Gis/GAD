@@ -1,43 +1,35 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- classe per gestire il map tool di richiesta di un punto in ambito del comando arco
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 import math
 
 
-import qad_utils
-from qad_snapper import *
-from qad_snappointsdisplaymanager import *
-from qad_variables import *
-from qad_getpoint import *
-from qad_arc import *
-from qad_rubberband import QadRubberBand
-from qad_highlight import QadHighlight
+from . import qad_utils
+from .qad_snapper import *
+from .qad_snappointsdisplaymanager import *
+from .qad_variables import *
+from .qad_getpoint import *
+from .qad_arc import *
+from .qad_rubberband import QadRubberBand
+from .qad_highlight import QadHighlight
 
 
 #===============================================================================
@@ -97,7 +89,6 @@ class Qad_arc_maptool(QadGetPoint):
     
    def __init__(self, plugIn, asToolForMPolygon = False):
       QadGetPoint.__init__(self, plugIn)
-                        
       self.arcStartPt = None
       self.arcSecondPt = None
       self.arcEndPt = None
@@ -107,35 +98,52 @@ class Qad_arc_maptool(QadGetPoint):
       self.arcStartPtForRadius = None
       self.arcRadius = None
       self.__rubberBand = QadRubberBand(self.canvas)
-
+ 
       self.asToolForMPolygon = asToolForMPolygon # se True significa che è usato per disegnare un poligono
       if self.asToolForMPolygon:
          self.__polygonRubberBand = QadRubberBand(self.plugIn.canvas, True)
          self.endVertex = None # punta al vertice iniziale e finale del poligono di QadPLINECommandClass
+      else:
+         self.__polygonRubberBand = None
 
 
    def hidePointMapToolMarkers(self):
       QadGetPoint.hidePointMapToolMarkers(self)
       self.__rubberBand.hide()
-      if self.asToolForMPolygon: self.__polygonRubberBand.hide()
-
+      if self.__polygonRubberBand is not None: self.__polygonRubberBand.hide()
+ 
    def showPointMapToolMarkers(self):
       QadGetPoint.showPointMapToolMarkers(self)
       self.__rubberBand.show()
-      if self.asToolForMPolygon: self.__polygonRubberBand.show()
+      if self.__polygonRubberBand is not None: self.__polygonRubberBand.show()
                                    
    def clear(self):
       QadGetPoint.clear(self)
       self.__rubberBand.reset()
-      if self.asToolForMPolygon: self.__polygonRubberBand.reset()
+      if self.__polygonRubberBand is not None: self.__polygonRubberBand.reset()
       self.mode = None
+
       
+   #============================================================================
+   # removeItems
+   #============================================================================
+   def removeItems(self):
+      QadGetPoint.removeItems(self)
+      # prima lo stacco dal canvas altrimenti non si rimuove perchè usato da canvas
+      if self.__rubberBand is not None:
+         del self.__rubberBand
+         self.__rubberBand = None
+
+      if self.__polygonRubberBand is not None:
+         del self.__polygonRubberBand
+         self.__polygonRubberBand = None
+
       
    def canvasMoveEvent(self, event):
       QadGetPoint.canvasMoveEvent(self, event)
       
       self.__rubberBand.reset()
-      if self.asToolForMPolygon: self.__polygonRubberBand.reset()
+      if self.__polygonRubberBand is not None: self.__polygonRubberBand.reset()
       
       result = False
       arc = QadArc()    
@@ -216,7 +224,7 @@ class Qad_arc_maptool(QadGetPoint):
       
          if points is not None:
             self.__rubberBand.setLine(points)
-            if self.asToolForMPolygon == True: # se True significa che è usato per disegnare un poligono
+            if self.__polygonRubberBand is not None: # significa che è usato per disegnare un poligono
                if self.endVertex is not None:
                   points.insert(0, self.endVertex)
                   self.__polygonRubberBand.setPolygon(points)
@@ -225,13 +233,13 @@ class Qad_arc_maptool(QadGetPoint):
    def activate(self):
       QadGetPoint.activate(self)            
       self.__rubberBand.show()
-      if self.asToolForMPolygon: self.__polygonRubberBand.show()
+      if self.__polygonRubberBand is not None: self.__polygonRubberBand.show()
       
    def deactivate(self):
       try: # necessario perché se si chiude QGIS parte questo evento nonostante non ci sia più l'oggetto maptool !
          QadGetPoint.deactivate(self)
          self.__rubberBand.hide()
-         if self.asToolForMPolygon: self.__polygonRubberBand.hide()
+         if self.__polygonRubberBand is not None: self.__polygonRubberBand.hide()
       except:
          pass
 
@@ -245,8 +253,9 @@ class Qad_arc_maptool(QadGetPoint):
          self.setDrawMode(QadGetPointDrawModeEnum.ELASTIC_LINE)
          self.setStartPoint(self.arcStartPt)
       # noti il primo e il secondo punto dell'arco si richiede il terzo punto
-      elif self.mode == Qad_arc_maptool_ModeEnum.START_SECOND_PT_KNOWN_ASK_FOR_END_PT:
-         self.setDrawMode(QadGetPointDrawModeEnum.NONE)
+      elif self.mode == Qad_arc_maptool_ModeEnum.START_SECOND_PT_KNOWN_ASK_FOR_END_PT:         
+         self.setDrawMode(QadGetPointDrawModeEnum.ELASTIC_LINE)
+         self.setStartPoint(self.arcSecondPt)
       # noto il primo punto dell'arco si richiede il centro         
       elif self.mode == Qad_arc_maptool_ModeEnum.START_PT_KNOWN_ASK_FOR_CENTER_PT:     
          self.setDrawMode(QadGetPointDrawModeEnum.ELASTIC_LINE)
@@ -363,7 +372,7 @@ class Qad_gripChangeArcRadius_maptool(QadGetPoint):
       self.entity = QadEntity(entity)
       self.arc = self.entity.getQadGeom() # arco in map coordinate
       self.basePt = self.arc.center
-      self.coordTransform = QgsCoordinateTransform(self.canvas.mapSettings().destinationCrs(), entity.layer.crs())
+      self.coordTransform = QgsCoordinateTransform(self.canvas.mapSettings().destinationCrs(), entity.layer.crs(),QgsProject.instance())
 
 
    #============================================================================
@@ -378,7 +387,7 @@ class Qad_gripChangeArcRadius_maptool(QadGetPoint):
       if points is None:
          return False
       
-      g = QgsGeometry.fromPolyline(points)
+      g = QgsGeometry.fromPolylineXY(points)
       # trasformo la geometria nel crs del layer
       g.transform(self.coordTransform)      
       self.__highlight.addGeometry(g, self.entity.layer)

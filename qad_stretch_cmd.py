@@ -1,45 +1,37 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
- comando STRETCH per stirare oggetti grafici
- 
-                              -------------------
-        begin                : 2013-07-15
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 
 
-from qad_stretch_maptool import *
-from qad_getpoint import *
-from qad_textwindow import *
-from qad_mpolygon_cmd import QadMPOLYGONCommandClass
-from qad_rectangle_cmd import QadRECTANGLECommandClass
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-import qad_utils
-import qad_layer
-import qad_stretch_fun
-import qad_grip
+from .qad_stretch_maptool import *
+from .qad_getpoint import *
+from .qad_textwindow import *
+from .qad_mpolygon_cmd import QadMPOLYGONCommandClass
+from .qad_rectangle_cmd import QadRECTANGLECommandClass
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from . import qad_utils
+from . import qad_layer
+from . import qad_stretch_fun
+from . import qad_grip
 
 
 # Classe che gestisce il comando STRETCH
@@ -56,7 +48,7 @@ class QadSTRETCHCommandClass(QadCommandClass):
       return "STRETCH"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runSTRETCHCommand)
+      action.triggered.connect(self.plugIn.runSTRETCHCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/stretch.png")
@@ -71,7 +63,7 @@ class QadSTRETCHCommandClass(QadCommandClass):
       self.points = []
       self.MPOLYGONCommand = None
       self.SSGeomList = [] # lista di entità da stirare con geom di selezione
-      self.basePt = QgsPoint()
+      self.basePt = QgsPointXY()
    
    def __del__(self):
       QadCommandClass.__del__(self)
@@ -112,7 +104,7 @@ class QadSTRETCHCommandClass(QadCommandClass):
          if stretchedGeom is None: # se non c'è lo salto senza errore
             return True
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
-         coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs())
+         coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs(),QgsProject.instance())
          stretchedGeom.transform(coordTransform)           
          # stiro la feature
          stretchedGeom = qad_stretch_fun.stretchQgsGeometry(stretchedGeom, containerGeom, \
@@ -121,7 +113,7 @@ class QadSTRETCHCommandClass(QadCommandClass):
          
          if stretchedGeom is not None:
             # trasformo la geometria nel crs del layer
-            coordTransform = QgsCoordinateTransform(self.plugIn.canvas.mapSettings().destinationCrs(), entity.layer.crs())
+            coordTransform = QgsCoordinateTransform(self.plugIn.canvas.mapSettings().destinationCrs(), entity.layer.crs(),QgsProject.instance())
             stretchedGeom.transform(coordTransform)
                        
             f = entity.getFeature()
@@ -288,7 +280,7 @@ class QadSTRETCHCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
      
@@ -334,7 +326,7 @@ class QadSTRETCHCommandClass(QadCommandClass):
             elif value == QadMsg.translate("Command_SSGET", "Remove") or value == "Remove":
                # Passa al metodo Rimuovi: gli oggetti possono essere rimossi dal gruppo di selezione
                self.AddOnSelection = False                        
-         elif type(value) == QgsPoint: # se é stato selezionato un punto
+         elif type(value) == QgsPointXY: # se é stato selezionato un punto
             del self.points[:] # svuoto la lista
             self.points.append(value)
             # imposto il map tool
@@ -371,7 +363,7 @@ class QadSTRETCHCommandClass(QadCommandClass):
                if self.AddOnSelection == False:
                   self.removeEntitySet(selSet)
                else:
-                  self.setEntitySetGeom(selSet, QgsGeometry.fromPolygon([self.MPOLYGONCommand.vertices]))
+                  self.setEntitySetGeom(selSet, QgsGeometry.fromPolygonXY([self.MPOLYGONCommand.vertices]))
                               
             del self.MPOLYGONCommand
             self.MPOLYGONCommand = None
@@ -406,7 +398,7 @@ class QadSTRETCHCommandClass(QadCommandClass):
             value = msg
 
 
-         if type(value) == QgsPoint:
+         if type(value) == QgsPointXY:
             self.points.append(value)   
             # cerco tutte le geometrie intersecanti il rettangolo
             # e considerando solo layer editabili
@@ -459,7 +451,7 @@ class QadSTRETCHCommandClass(QadCommandClass):
                          self.plugIn.lastOffsetPt, \
                          "", QadInputModeEnum.NONE)                                      
             self.step = 5      
-         elif type(value) == QgsPoint: # se é stato inserito il punto base
+         elif type(value) == QgsPointXY: # se é stato inserito il punto base
             self.basePt.set(value.x(), value.y())
 
             # imposto il map tool
@@ -519,9 +511,9 @@ class QadSTRETCHCommandClass(QadCommandClass):
             value = msg
 
          if value is None:
-            newPt = QgsPoint(self.basePt.x() * 2, self.basePt.y() * 2)
+            newPt = QgsPointXY(self.basePt.x() * 2, self.basePt.y() * 2)
             self.stretchFeatures(newPt)
-         elif type(value) == QgsPoint: # se é stato inserito lo spostamento con un punto
+         elif type(value) == QgsPointXY: # se é stato inserito lo spostamento con un punto
             self.stretchFeatures(value)
             
          return True # fine comando
@@ -542,7 +534,7 @@ class QadGRIPSTRETCHCommandClass(QadCommandClass):
    def __init__(self, plugIn):
       QadCommandClass.__init__(self, plugIn)
       self.selectedEntityGripPoints = [] # lista in cui ogni elemento è una entità + una lista di punti da stirare
-      self.basePt = QgsPoint()
+      self.basePt = QgsPointXY()
       self.skipToNextGripCommand = False
       self.copyEntities = False
       self.nOperationsToUndo = 0
@@ -606,6 +598,29 @@ class QadGRIPSTRETCHCommandClass(QadCommandClass):
       for entityGripPoints in entitySetGripPoints.entityGripPoints:
          self.addToSelectedEntityGripPoints(entityGripPoints)
       self.getPointMapTool().selectedEntityGripPoints = self.selectedEntityGripPoints
+      
+      # input : self.basePt e entitySetGripPoints
+      # cerco in entitySetGripPoints l'entità che ha un solo grip selezionato corrispondente a basePt
+      entityGripPoints, entityGripPoint = entitySetGripPoints.isIntersecting(self.basePt)
+      if entityGripPoint.getStatus() == qad_grip.QadGripStatusEnum.SELECTED and \
+         len(entityGripPoints.getSelectedGripPoints()) == 1:
+         
+         entity = entityGripPoints.entity
+         # verifico se l'entità appartiene ad uno stile di quotatura
+         if entity.isDimensionComponent():
+            pass
+         else:
+            entityType = entity.getEntityType(entityGripPoint.atGeom, entityGripPoint.atSubGeom)
+            if entityType == QadEntityGeomTypeEnum.ARC:
+               arc = entity.getQadGeom(entityGripPoint.atGeom, entityGripPoint.atSubGeom) # arco in map coordinate
+            elif entityType == QadEntityGeomTypeEnum.LINESTRING:         
+               linearObjectList = entity.getQadGeom(entityGripPoint.atGeom, entityGripPoint.atSubGeom) # linestring in map coordinate
+               self.getPointMapTool().prevPart, self.getPointMapTool().nextPart = linearObjectList.getPrevNextLinearObjectsAtVertex(entityGripPoint.nVertex)               
+            elif entityType == QadEntityGeomTypeEnum.CIRCLE:         
+               circle = entity.getQadGeom(entityGripPoint.atGeom, entityGripPoint.atSubGeom)# cerchio in map coordinate
+               if circle.isPtOnCircle(entityGripPoint.getPoint()):
+                  self.getPointMapTool().prevPart = qad_utils.QadLinearObject()
+                  self.getPointMapTool().prevPart.setSegment(circle.center, entityGripPoint.getPoint())
 
 
    #============================================================================
@@ -640,7 +655,7 @@ class QadGRIPSTRETCHCommandClass(QadCommandClass):
             return True
 
          # trasformo la geometria nel crs del canvas per lavorare con coordinate piane xy
-         coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs())
+         coordTransform = QgsCoordinateTransform(entity.layer.crs(), self.plugIn.canvas.mapSettings().destinationCrs(),QgsProject.instance())
          stretchedGeom.transform(coordTransform)           
          # stiro la feature
          stretchedGeom = qad_stretch_fun.gripStretchQgsGeometry(stretchedGeom, self.basePt, ptList, \
@@ -649,7 +664,7 @@ class QadGRIPSTRETCHCommandClass(QadCommandClass):
          
          if stretchedGeom is not None:
             # trasformo la geometria nel crs del layer
-            coordTransform = QgsCoordinateTransform(self.plugIn.canvas.mapSettings().destinationCrs(), entity.layer.crs())
+            coordTransform = QgsCoordinateTransform(self.plugIn.canvas.mapSettings().destinationCrs(), entity.layer.crs(),QgsProject.instance())
             stretchedGeom.transform(coordTransform)
                        
             f = entity.getFeature()
@@ -774,7 +789,7 @@ class QadGRIPSTRETCHCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
      
@@ -829,7 +844,7 @@ class QadGRIPSTRETCHCommandClass(QadCommandClass):
                self.waitForStretchPoint()
             elif value == QadMsg.translate("Command_GRIP", "eXit") or value == "eXit":
                return True # fine comando
-         elif type(value) == QgsPoint: # se é stato selezionato un punto
+         elif type(value) == QgsPointXY: # se é stato selezionato un punto
             if ctrlKey:
                self.copyEntities = True
                
@@ -867,7 +882,7 @@ class QadGRIPSTRETCHCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito il punto base
+         if type(value) == QgsPointXY: # se é stato inserito il punto base
             self.basePt.set(value.x(), value.y())
             # imposto il map tool
             self.getPointMapTool().basePt = self.basePt

@@ -1,43 +1,34 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando ARC per disegnare un arco
- 
-                              -------------------
-        begin                : 2013-05-22
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 import math
 
 
-from qad_getpoint import *
-from qad_arc_maptool import *
-from qad_generic_cmd import QadCommandClass
-from qad_msg import QadMsg
-from qad_textwindow import *
-import qad_utils
-import qad_layer
-import qad_grip
+from .qad_getpoint import *
+from .qad_arc_maptool import *
+from .qad_generic_cmd import QadCommandClass
+from .qad_msg import QadMsg
+from .qad_textwindow import *
+from . import qad_utils
+from . import qad_layer
+from . import qad_grip
 
 
 # Classe che gestisce il comando ARC
@@ -54,7 +45,7 @@ class QadARCCommandClass(QadCommandClass):
       return "ARC"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runARCCommand)
+      action.triggered.connect(self.plugIn.runARCCommand)
    
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/arc.png")
@@ -78,11 +69,11 @@ class QadARCCommandClass(QadCommandClass):
    def run(self, msgMapTool = False, msg = None):
       self.isValidPreviousInput = True # per gestire il comando anche in macro
            
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
       
-      currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, QGis.Line)
+      currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, QgsWkbTypes.LineString)
       if currLayer is None:
          self.showErr(errMsg)
          return True # fine comando
@@ -91,7 +82,7 @@ class QadARCCommandClass(QadCommandClass):
       # RICHIESTA PRIMO PUNTO o CENTRO
       if self.step == 0: # inizio del comando
          # imposto il map tool
-         self.getPointMapTool().setMode(Qad_arc_maptool_ModeEnum.NONE_KNOWN_ASK_FOR_START_PT)        
+         self.getPointMapTool().setMode(Qad_arc_maptool_ModeEnum.NONE_KNOWN_ASK_FOR_START_PT)
          keyWords = QadMsg.translate("Command_ARC", "Center")
          
          prompt = QadMsg.translate("Command_ARC", "Specify the start point of the arc or [{0}]:").format(keyWords)                 
@@ -133,7 +124,7 @@ class QadARCCommandClass(QadCommandClass):
             else:
                return True # fine comando
 
-         if type(value) == QgsPoint: # se é stato inserito il punto iniziale dell'arco           
+         if type(value) == QgsPointXY: # se é stato inserito il punto iniziale dell'arco
             self.startPt = value
             self.plugIn.setLastPoint(value)
             
@@ -198,7 +189,7 @@ class QadARCCommandClass(QadCommandClass):
                # si appresta ad attendere un punto
                self.waitForPoint(QadMsg.translate("Command_ARC", "Specify the final point of the arc: "))
                self.step = 8     
-         elif type(value) == QgsPoint: # se é stato inserito il secondo punto dell'arco            
+         elif type(value) == QgsPointXY: # se é stato inserito il secondo punto dell'arco
             self.secondPt = value
             # imposto il map tool
             self.getPointMapTool().arcSecondPt = self.secondPt
@@ -339,7 +330,7 @@ class QadARCCommandClass(QadCommandClass):
                             QadInputModeEnum.NOT_NULL | QadInputModeEnum.NOT_ZERO | QadInputModeEnum.NOT_NEGATIVE)
                self.step = 7
                return False                              
-         elif type(value) == QgsPoint: # se é stato inserito il punto finale dell'arco
+         elif type(value) == QgsPointXY: # se é stato inserito il punto finale dell'arco
             self.endPt = value
                      
             arc = QadArc()
@@ -397,7 +388,7 @@ class QadARCCommandClass(QadCommandClass):
             value = msg
             ctrlPressed = False
 
-         if type(value) == QgsPoint:
+         if type(value) == QgsPointXY:
             self.angle = qad_utils.getAngleBy2Pts(self.centerPt, value)             
          else:
             self.angle = value
@@ -452,7 +443,7 @@ class QadARCCommandClass(QadCommandClass):
             value = msg
             ctrlPressed = False
 
-         if type(value) == QgsPoint:
+         if type(value) == QgsPointXY:
             self.chord = qad_utils.getDistance(self.startPt, value)             
          else:
             self.chord = value
@@ -582,7 +573,7 @@ class QadARCCommandClass(QadCommandClass):
                             QadInputModeEnum.NOT_NULL | QadInputModeEnum.NOT_ZERO | QadInputModeEnum.NOT_NEGATIVE)
                self.step = 12
                return False                              
-         elif type(value) == QgsPoint: # se é stato inserito il centro dell'arco
+         elif type(value) == QgsPointXY: # se é stato inserito il centro dell'arco
             self.centerPt = value
 
             arc = QadArc()         
@@ -642,7 +633,7 @@ class QadARCCommandClass(QadCommandClass):
             value = msg
             ctrlPressed = False
 
-         if type(value) == QgsPoint:
+         if type(value) == QgsPointXY:
             self.angle = qad_utils.getAngleBy2Pts(self.startPt, value)
          else:
             self.angle = value
@@ -696,7 +687,7 @@ class QadARCCommandClass(QadCommandClass):
             value = msg
             ctrlPressed = False
             
-         if type(value) == QgsPoint:
+         if type(value) == QgsPointXY:
             self.angleTan = qad_utils.getAngleBy2Pts(self.startPt, value)             
          else:
             self.angleTan = value
@@ -750,7 +741,7 @@ class QadARCCommandClass(QadCommandClass):
             value = msg
             ctrlPressed = False
 
-         if type(value) == QgsPoint:
+         if type(value) == QgsPointXY:
             self.radius = qad_utils.getDistance(self.endPt, value)             
          else:
             self.radius = value
@@ -878,7 +869,7 @@ class QadGRIPCHANGEARCRADIUSCommandClass(QadCommandClass):
       self.entity = None
       self.skipToNextGripCommand = False
       self.copyEntities = False
-      self.basePt = QgsPoint()
+      self.basePt = QgsPointXY()
       self.nOperationsToUndo = 0
 
    
@@ -932,7 +923,7 @@ class QadGRIPCHANGEARCRADIUSCommandClass(QadCommandClass):
       if points is None:
          return False
       
-      g = QgsGeometry.fromPolyline(points)
+      g = QgsGeometry.fromPolylineXY(points)
       f = self.entity.getFeature()      
       f.setGeometry(g)
       
@@ -997,7 +988,7 @@ class QadGRIPCHANGEARCRADIUSCommandClass(QadCommandClass):
    # run
    #============================================================================
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
      
@@ -1053,8 +1044,8 @@ class QadGRIPCHANGEARCRADIUSCommandClass(QadCommandClass):
                self.waitForRadius()
             elif value == QadMsg.translate("Command_GRIP", "eXit") or value == "eXit":
                return True # fine comando
-         elif type(value) == QgsPoint or type(value) == float: # se é stato inserito il raggio
-            if type(value) == QgsPoint: # se é stato inserito il raggio con un punto
+         elif type(value) == QgsPointXY or type(value) == float: # se é stato inserito il raggio
+            if type(value) == QgsPointXY: # se é stato inserito il raggio con un punto
                if value == self.basePt:
                   self.showMsg(QadMsg.translate("QAD", "\nThe value must be positive and not zero."))
                   # si appresta ad attendere raggio
@@ -1100,7 +1091,7 @@ class QadGRIPCHANGEARCRADIUSCommandClass(QadCommandClass):
          else: # il punto arriva come parametro della funzione
             value = msg
 
-         if type(value) == QgsPoint: # se é stato inserito il punto base
+         if type(value) == QgsPointXY: # se é stato inserito il punto base
             self.basePt.set(value.x(), value.y())
             # imposto il map tool
             self.getPointMapTool().basePt = self.basePt

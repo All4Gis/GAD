@@ -1,45 +1,36 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- QAD Quantum Aided Design plugin
-
- comando JOIN e DISJOIN per aggregare e disgregare le geometrie
- (multipoint, multilinestring, poligon e multipoligon)
- 
-                              -------------------
-        begin                : 2016-04-06
-        copyright            : iiiii
-        email                : hhhhh
-        developers           : bbbbb aaaaa ggggg
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-"""
+# --------------------------------------------------------
+#   GAD - Geographic Aided Design
+#
+#    begin      : May 05, 2019
+#    copyright  : (c) 2019 by German Perez-Casanova Gomez
+#    email      : icearqu@gmail.com
+#
+# --------------------------------------------------------
+#   GAD  This program is free software and is distributed in
+#   the hope that it will be useful, but without any warranty,
+#   you can redistribute it and/or modify it under the terms
+#   of version 3 of the GNU General Public License (GPL v3) as
+#   published by the Free Software Foundation (www.gnu.org)
+# --------------------------------------------------------
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 
 
-from qad_generic_cmd import QadCommandClass
-from qad_snapper import *
-from qad_getpoint import *
-from qad_ssget_cmd import QadSSGetClass
-from qad_msg import QadMsg
-from qad_textwindow import *
-import qad_utils
-import qad_layer
-from qad_variables import *
-from qad_entsel_cmd import QadEntSelClass
+from .qad_generic_cmd import QadCommandClass
+from .qad_snapper import *
+from .qad_getpoint import *
+from .qad_ssget_cmd import QadSSGetClass
+from .qad_msg import QadMsg
+from .qad_textwindow import *
+from . import qad_utils
+from . import qad_layer
+from .qad_variables import *
+from .qad_entsel_cmd import QadEntSelClass
 
 
 
@@ -57,10 +48,10 @@ class QadJOINCommandClass(QadCommandClass):
       return "JOIN"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runJOINCommand)
+      action.triggered.connect(self.plugIn.runJOINCommand)
 
    def getIcon(self):
-      return QIcon(":/plugins/qad/icons/join.png")
+      return QIcon(":/plugins/qad/icons/join.svg")
    
    def getNote(self):
       # impostare le note esplicative del comando      
@@ -92,7 +83,7 @@ class QadJOINCommandClass(QadCommandClass):
       if self.step == 1: # quando si é in fase di selezione entità
          return self.entSelClass.getCurrentContextualMenu()
       elif self.step == 2: # quando si é in fase di selezione gruppo entità
-         return self.SSGetClass.getCurrentContextualMenu()()
+         return None # return self.SSGetClass.getCurrentContextualMenu()()
       else:
          return self.contextualMenu
 
@@ -104,15 +95,15 @@ class QadJOINCommandClass(QadCommandClass):
       self.SSGetClass.onlyEditableLayers = True
       self.SSGetClass.checkDimLayers = False # scarto le quote
       geometryType = self.entity.layer.geometryType()
-      if geometryType == QGis.Point:
+      if geometryType == QgsWkbTypes.PointGeometry:
          self.SSGetClass.checkPointLayer = True
          self.SSGetClass.checkLineLayer = False
          self.SSGetClass.checkPolygonLayer = False
-      elif geometryType == QGis.Line:
+      elif geometryType == QgsWkbTypes.LineGeometry:
          self.SSGetClass.checkPointLayer = False
          self.SSGetClass.checkLineLayer = True
          self.SSGetClass.checkPolygonLayer = True
-      elif geometryType == QGis.Polygon:
+      elif geometryType == QgsWkbTypes.PolygonGeometry:
          self.SSGetClass.checkPointLayer = False
          self.SSGetClass.checkLineLayer = True
          self.SSGetClass.checkPolygonLayer = True
@@ -131,12 +122,12 @@ class QadJOINCommandClass(QadCommandClass):
       
       for layerEntitySet in entitySet.layerEntitySetList:
          layer = layerEntitySet.layer
-         if layer.geometryType() != QGis.Point:
+         if layer.geometryType() != QgsWkbTypes.PointGeometry:
             self.showMsg(QadMsg.translate("QAD", "Invalid object."))
             return False
 
          if removeOriginals: layerList.append(layer)
-         coordTransform = QgsCoordinateTransform(layer.crs(), self.entity.layer.crs())
+         coordTransform = QgsCoordinateTransform(layer.crs(), self.entity.layer.crs(),QgsProject.instance())
 
          for featureId in layerEntitySet.featureIds:
             # se la feature è quella di entity è errore 
@@ -194,12 +185,12 @@ class QadJOINCommandClass(QadCommandClass):
       
       for layerEntitySet in entitySet.layerEntitySetList:
          layer = layerEntitySet.layer
-         if layer.geometryType() != QGis.Polygon and layer.geometryType() != QGis.Line:
+         if layer.geometryType() != QgsWkbTypes.PolygonGeometry and layer.geometryType() != QgsWkbTypes.LineGeometry:
             self.showMsg(QadMsg.translate("QAD", "Invalid object."))
             return False
 
          if removeOriginals: layerList.append(layer)
-         coordTransform = QgsCoordinateTransform(layer.crs(), self.entity.layer.crs())
+         coordTransform = QgsCoordinateTransform(layer.crs(), self.entity.layer.crs(),QgsProject.instance())
 
          for featureId in layerEntitySet.featureIds:
             # se la feature è quella di entity è errore 
@@ -258,12 +249,12 @@ class QadJOINCommandClass(QadCommandClass):
       
       for layerEntitySet in entitySet.layerEntitySetList:
          layer = layerEntitySet.layer
-         if layer.geometryType() != QGis.Polygon and layer.geometryType() != QGis.Line:
+         if layer.geometryType() != QgsWkbTypes.PolygonGeometry and layer.geometryType() != QgsWkbTypes.LineGeometry:
             self.showMsg(QadMsg.translate("QAD", "Invalid object."))
             return False
 
          if removeOriginals: layerList.append(layer)
-         coordTransform = QgsCoordinateTransform(layer.crs(), self.entity.layer.crs())
+         coordTransform = QgsCoordinateTransform(layer.crs(), self.entity.layer.crs(),QgsProject.instance())
 
          for featureId in layerEntitySet.featureIds:
             # se la feature è quella di entity è errore 
@@ -281,7 +272,7 @@ class QadJOINCommandClass(QadCommandClass):
                # Riduco la geometria in point o polyline
                simplifiedGeoms = qad_utils.asPointOrPolyline(geom)
                # deve essere un poligono senza ring
-               if len(simplifiedGeoms) != 1 or simplifiedGeoms[0].wkbType() != QGis.WKBLineString:
+               if len(simplifiedGeoms) != 1 or simplifiedGeoms[0].wkbType() != QgsWkbTypes.LineString:
                   self.showMsg(QadMsg.translate("QAD", "Invalid object."))
                   return False
                points = simplifiedGeoms[0].asPolyline() # vettore di punti
@@ -290,14 +281,14 @@ class QadJOINCommandClass(QadCommandClass):
                   self.showMsg(QadMsg.translate("QAD", "Invalid object."))
                   return False
                del geom
-               geom = QgsGeometry.fromPolygon(geomToAdd.asPolygon())
+               geom = QgsGeometry.fromPolygonXY(geomToAdd.asPolygon())
             else: # se il poligono non è contenuto nella geometria da aggiungere
                # Riduco la geometria in point o polyline
                simplifiedGeoms = qad_utils.asPointOrPolyline(geomToAdd)
                for simplifiedGeom in simplifiedGeoms:
                   points = simplifiedGeom.asPolyline() # vettore di punti                     
                   # se la geometria da aggiungere è contenuta nel poligono
-                  if geom.contains(QgsGeometry.fromPolyline(points)):
+                  if geom.contains(QgsGeometry.fromPolylineXY(points)):
                      # aggiungo un'isola
                      if geom.addRing(points) != 0: # 0 in case of success
                         self.showMsg(QadMsg.translate("QAD", "Invalid object."))
@@ -360,7 +351,7 @@ class QadJOINCommandClass(QadCommandClass):
 
 
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
       
@@ -390,11 +381,11 @@ class QadJOINCommandClass(QadCommandClass):
          if self.SSGetClass.run(msgMapTool, msg) == True:
             if self.SSGetClass.entitySet.count() > 0:
                geometryType = self.entity.layer.geometryType()
-               if geometryType == QGis.Point:
+               if geometryType == QgsWkbTypes.PointGeometry:
                   self.addEntitySetToPoint(self.SSGetClass.entitySet)
-               elif geometryType == QGis.Line:
+               elif geometryType == QgsWkbTypes.LineGeometry:
                   self.addEntitySetToPolyline(self.SSGetClass.entitySet)
-               elif geometryType == QGis.Polygon:
+               elif geometryType == QgsWkbTypes.PolygonGeometry:
                   self.addEntitySetToPolygon(self.SSGetClass.entitySet)
                
                return True
@@ -417,10 +408,10 @@ class QadDISJOINCommandClass(QadCommandClass):
       return "DISJOIN"
 
    def connectQAction(self, action):
-      QObject.connect(action, SIGNAL("triggered()"), self.plugIn.runDISJOINCommand)
+      action.triggered.connect(self.plugIn.runDISJOINCommand)
 
    def getIcon(self):
-      return QIcon(":/plugins/qad/icons/disjoin.png")
+      return QIcon(":/plugins/qad/icons/disjoin.svg")
    
    def getNote(self):
       # impostare le note esplicative del comando      
@@ -513,23 +504,25 @@ class QadDISJOINCommandClass(QadCommandClass):
       
       geom = self.entity.getGeometry()
       wkbType = geom.wkbType()
-      if wkbType == QGis.WKBMultiPoint or wkbType == QGis.WKBMultiLineString:
+      if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ or \
+         wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
          if geom.deletePart(part) == False: # disgrego una parte
             self.showMsg(QadMsg.translate("QAD", "Invalid object."))
             return False
          newGeom = self.mapToLayerCoordinates(layer, self.currSubGeom)
-      elif wkbType == QGis.WKBPolygon or wkbType == QGis.WKBMultiPolygon:
+      elif wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ or \
+           wkbType == QgsWkbTypes.MultiPolygon or wkbType == QgsWkbTypes.MultiPolygonZ:
          if ring is not None: # disgrego un'isola 
             if geom.deleteRing(ring + 1, part) == False: # cancello una isola (Ring 0 is outer ring and can't be deleted)
                self.showMsg(QadMsg.translate("QAD", "Invalid object."))
                return False
-            newGeom = QgsGeometry.fromPolygon([self.mapToLayerCoordinates(layer, self.currSubGeom).asPolyline()])
+            newGeom = QgsGeometry.fromPolygonXY([self.mapToLayerCoordinates(layer, self.currSubGeom).asPolyline()])
          else: # disgrego una parte
-            if wkbType == QGis.WKBPolygon:
+            if wkbType == QgsWkbTypes.Polygon or wkbType == QgsWkbTypes.PolygonZ:
                self.showMsg(QadMsg.translate("QAD", "Invalid object."))
                return False
             
-            newGeom = QgsGeometry.fromPolygon([self.mapToLayerCoordinates(layer, self.currSubGeom).asPolyline()])
+            newGeom = QgsGeometry.fromPolygonXY([self.mapToLayerCoordinates(layer, self.currSubGeom).asPolyline()])
             ring = 0
             ringGeom = qad_utils.getSubGeomAt(geom, [part, ring])
             # se la parte ha delle isole
@@ -589,7 +582,7 @@ class QadDISJOINCommandClass(QadCommandClass):
 
 
    def run(self, msgMapTool = False, msg = None):
-      if self.plugIn.canvas.mapSettings().destinationCrs().geographicFlag():
+      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
          self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
          return True # fine comando
       
