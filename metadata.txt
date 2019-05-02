@@ -4,11 +4,11 @@ name=QAD
 email=icearqu@gmail.com
 author=CryptoCereal
 qgisMinimumVersion=3.04
-description=Quantum Aided Design: cad like commands in QGIS
-about=Quantum Aided Design: cad like commands in QGIS
+description=Geographic Aided Design: Professional Drawing Tools for GIS
+about=Geographic Aided Design: Professional Drawing Tools for GIS
 version=3.00.0
-tracker=https://github.com/gam17/QAD/issues
-repository=https://github.com/gam17/QAD
+tracker=https://github.com/CryptoCereal/GAD/issues
+repository=https://github.com/CryptoCereal/GAD
 
 
 # Optional items:
@@ -17,7 +17,7 @@ category=Vector
 # tags are comma separated with spaces allowed
 tags=cad,circle,digitizing,dimensioning,polygon,polyline,rectangle,snap,vector
 
-homepage=https://github.com/gam17/QAD
+homepage=https://github.com/CryptoCereal/GAD
 icon=icons/qad.svg
 # experimental flag
 experimental=False
@@ -29,8 +29,5 @@ qgisMaximumVersion=3.99
 
 # Uncomment the following line and add your changelog entries:
 changelog=
-    * 2018-05-11 Added French localization (by dobriseb)
-    * 2018-05-11 Added Dynamic Input
-    * 2018-05-11 Added <DYNMODE>, <DYNPROMPT>, <DYNDIVIS>, <DYNDIGRIP>, <DYNPIFORMAT>, <DYNPICOORDS>, <DYNPIVIS> system variables
-    * 2017-02-08 Added <DIMARC> command (inspired by Simon Haufe)
-    * 2017-02-08 Added <Extend beyond ticks> property for DIM commands (inspired by Simon Haufe)
+    * 2019-05-02 Initial port to QGIS 3, still bugs found
+
