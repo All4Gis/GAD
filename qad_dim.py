@@ -1802,7 +1802,7 @@ class QadDimStyle():
             return None
       
       f = QgsFeature(self.getSymbolFeaturePrototype())
-      g = QgsGeometry.fromPoint(insPt)
+      g = QgsGeometry.fromPointXY(insPt)
        
       if (sourceCrs is not None) and sourceCrs != self.getSymbolLayer().crs():
          coordTransform = QgsCoordinateTransform(sourceCrs, self.getSymbolLayer().crs(),QgsProject.instance()) # trasformo la geometria
@@ -1874,7 +1874,7 @@ class QadDimStyle():
       if symbolFeaturePrototype is None:
          return None
       f = QgsFeature(symbolFeaturePrototype)
-      g = QgsGeometry.fromPoint(insPt)
+      g = QgsGeometry.fromPointXY(insPt)
            
       if (sourceCrs is not None) and sourceCrs != self.getSymbolLayer().crs():
          coordTransform = QgsCoordinateTransform(sourceCrs, self.getSymbolLayer().crs(),QgsProject.instance()) # trasformo la geometria
@@ -1913,7 +1913,7 @@ class QadDimStyle():
          return None     
       
       f = QgsFeature(self.getSymbolFeaturePrototype())
-      g = QgsGeometry.fromPoint(insPt)
+      g = QgsGeometry.fromPointXY(insPt)
        
       if (sourceCrs is not None) and sourceCrs != self.getSymbolLayer().crs():
          coordTransform = QgsCoordinateTransform(sourceCrs, self.getSymbolLayer().crs(),QgsProject.instance()) # trasformo la geometria
@@ -3084,7 +3084,7 @@ class QadDimStyle():
       if textualFeaturePrototype is None:
          return None
       f = QgsFeature(textualFeaturePrototype)
-      g = QgsGeometry.fromPoint(_pt)
+      g = QgsGeometry.fromPointXY(_pt)
       
       if (sourceCrs is not None) and sourceCrs != self.getTextualLayer().crs():
          coordTransform = QgsCoordinateTransform(sourceCrs, self.getTextualLayer().crs(),QgsProject.instance()) # trasformo la geometria
@@ -3772,7 +3772,7 @@ class QadDimStyle():
       textInsPt = qad_utils.getPolarPointByPtAngle(textInsPt, textRot + math.pi / 2, self.textOffsetDist)
                
       # testo
-      textGeom = QgsGeometry.fromPoint(textInsPt)
+      textGeom = QgsGeometry.fromPointXY(textInsPt)
       textFeature = self.getTextFeature(textValue, textInsPt, textRot, canvas.mapSettings().destinationCrs())      
                
       # blocchi frecce
@@ -3942,7 +3942,7 @@ class QadDimStyle():
       textInsPt = qad_utils.getPolarPointByPtAngle(textInsPt, textRot + math.pi / 2, self.textOffsetDist)
 
       # testo
-      textGeom = QgsGeometry.fromPoint(textInsPt)
+      textGeom = QgsGeometry.fromPointXY(textInsPt)
       textFeature = self.getTextFeature(textValue, textInsPt, textRot, canvas.mapSettings().destinationCrs())      
 
       # blocchi frecce
@@ -4136,7 +4136,7 @@ class QadDimStyle():
          textInsPt = qad_utils.getPolarPointByPtAngle(textInsPt, textRot + math.pi / 2, self.textOffsetDist)
 
       # testo
-      textGeom = QgsGeometry.fromPoint(textInsPt)
+      textGeom = QgsGeometry.fromPointXY(textInsPt)
       textFeature = self.getTextFeature(textValue, textInsPt, textRot, canvas.mapSettings().destinationCrs())      
 
       # blocchi frecce
@@ -4478,7 +4478,7 @@ class QadDimStyle():
       textInsPt = qad_utils.getPolarPointByPtAngle(textInsPt, textRot + math.pi / 2, self.textOffsetDist)
 
       # testo
-      textGeom = QgsGeometry.fromPoint(textInsPt)
+      textGeom = QgsGeometry.fromPointXY(textInsPt)
       textFeature = self.getTextFeature(textValue, textInsPt, textRot, canvas.mapSettings().destinationCrs())      
       
       # creo un rettangolo intorno al testo con un offset

@@ -338,7 +338,7 @@ class QadTRIMCommandClass(QadCommandClass):
             if self.getPointMapTool().entity.isInitialized():
                self.entitySet.addEntity(self.getPointMapTool().entity)
                ToExtend = True if self.getPointMapTool().shiftKey == True else False
-               self.trimFeatures(QgsGeometry.fromPoint(value), ToExtend)
+               self.trimFeatures(QgsGeometry.fromPointXY(value), ToExtend)
             else:
                # cerco se ci sono entità nel punto indicato considerando
                # solo layer lineari editabili che non appartengano a quote
@@ -357,7 +357,7 @@ class QadTRIMCommandClass(QadCommandClass):
                   layer = result[1]
                   point = result[2]
                   self.entitySet.addEntity(QadEntity().set(layer, feature.id()))
-                  self.trimFeatures(QgsGeometry.fromPoint(point), False)
+                  self.trimFeatures(QgsGeometry.fromPointXY(point), False)
          else:
             return True # fine comando
          
