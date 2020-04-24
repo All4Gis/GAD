@@ -110,9 +110,9 @@ def addPointToLayer(plugIn, layer, point, transform = True, refresh = True, chec
    
    if transform:
       transformedPoint = plugIn.canvas.mapSettings().mapToLayerCoordinates(layer, point)
-      g = QgsGeometry.fromPoint(transformedPoint)
+      g = QgsGeometry.fromPointXY(transformedPoint)
    else:
-      g = QgsGeometry.fromPoint(point)
+      g = QgsGeometry.fromPointXY(point)
 
    if check_validity:
       if not g.isGeosValid():

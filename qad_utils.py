@@ -1402,8 +1402,8 @@ def getLinePart(geom, ptStart, ptEnd):
    if ptStart == ptEnd:
       return None
    
-   geomPtStart = QgsGeometry.fromPoint(ptStart)       
-   geomPtEnd = QgsGeometry.fromPoint(ptEnd)
+   geomPtStart = QgsGeometry.fromPointXY(ptStart)       
+   geomPtEnd = QgsGeometry.fromPointXY(ptEnd)
    
    isPolygon = True if (geom.wkbType() == QgsWkbTypes.Polygon or geom.wkbType() == QgsWkbTypes.PolygonZ) else False
    
@@ -2189,7 +2189,7 @@ def asPointOrPolyline(geom):
       elif wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
          pointList = g.asMultiPoint() # vettore di punti
          for point in pointList:
-            _g = QgsGeometry.fromPoint(point)
+            _g = QgsGeometry.fromPointXY(point)
             result.append(_g)            
       elif wkbType == QgsWkbTypes.MultiLineString or wkbType == QgsWkbTypes.MultiLineStringZ:
          lineList = g.asMultiPolyline() # vettore di linee
@@ -2619,7 +2619,7 @@ def rotateQgsGeometry(geom, basePt, angle):
    if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
       pt = geom.asPoint() # un punto
       newPt = rotatePoint(pt, basePt, angle)
-      return QgsGeometry.fromPoint(newPt)
+      return QgsGeometry.fromPointXY(newPt)
 
    if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       points = geom.asMultiPoint() # vettore di punti
@@ -2692,7 +2692,7 @@ def scaleQgsGeometry(geom, basePt, scale):
    if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
       pt = geom.asPoint() # un punto
       newPt = scalePoint(pt, basePt, scale)
-      return QgsGeometry.fromPoint(newPt)
+      return QgsGeometry.fromPointXY(newPt)
 
    if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       points = geom.asMultiPoint() # vettore di punti
@@ -2765,7 +2765,7 @@ def moveQgsGeometry(geom, offSetX, offSetY):
    if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
       pt = geom.asPoint() # un punto
       newPt = movePoint(pt, offSetX, offSetY)
-      return QgsGeometry.fromPoint(newPt)
+      return QgsGeometry.fromPointXY(newPt)
 
    if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       points = geom.asMultiPoint() # vettore di punti
@@ -3395,7 +3395,7 @@ def mirrorQgsGeometry(geom, pt1, pt2):
    if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
       pt = geom.asPoint() # un punto
       newPt = mirrorPoint(pt, pt1, mirrorAngle)
-      return QgsGeometry.fromPoint(newPt)
+      return QgsGeometry.fromPointXY(newPt)
 
    if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       points = geom.asMultiPoint() # vettore di punti
@@ -3883,7 +3883,7 @@ def getSubGeomAtVertex(geom, atVertex):
       if atVertex > len(pts) - 1:
          return None, None
       else:
-         return QgsGeometry.fromPoint(pts[atVertex]), [atVertex]
+         return QgsGeometry.fromPointXY(pts[atVertex]), [atVertex]
 
    elif wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:
       pts = geom.asPolyline() # lista di punti

@@ -571,7 +571,7 @@ class QadLayerEntitySet():
                # (in cache del layer) e il sistema di coordinate é diverso de quello della mappa corrente 
                wkbType = g.wkbType()
                if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
-                  g = QgsGeometry().fromPoint(g.asPoint())
+                  g = QgsGeometry().fromPointXY(g.asPoint())
                elif wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
                   g = QgsGeometry().fromMultiPointXY(g.asMultiPoint())
                elif wkbType == QgsWkbTypes.LineString or wkbType == QgsWkbTypes.LineStringZ:

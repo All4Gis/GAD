@@ -341,7 +341,7 @@ class QadEXTENDCommandClass(QadCommandClass):
             if self.getPointMapTool().entity.isInitialized():
                self.entitySet.addEntity(self.getPointMapTool().entity)
                ToExtend = True if self.getPointMapTool().shiftKey == False else False
-               self.extendFeatures(QgsGeometry.fromPoint(value), ToExtend)
+               self.extendFeatures(QgsGeometry.fromPointXY(value), ToExtend)
             else:
                # cerco se ci sono entità nel punto indicato considerando
                # solo layer lineari editabili che non appartengano a quote
@@ -360,7 +360,7 @@ class QadEXTENDCommandClass(QadCommandClass):
                   layer = result[1]
                   point = result[2]
                   self.entitySet.addEntity(QadEntity().set(layer, feature.id()))
-                  self.extendFeatures(QgsGeometry.fromPoint(point), True)
+                  self.extendFeatures(QgsGeometry.fromPointXY(point), True)
          else:
             return True # fine comando
          

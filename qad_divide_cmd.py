@@ -138,7 +138,7 @@ class QadDIVIDECommandClass(QadCommandClass):
    #============================================================================
    def addFeature(self, layer, insPt, rot):
       transformedPoint = self.mapToLayerCoordinates(layer, insPt)
-      g = QgsGeometry.fromPoint(transformedPoint)
+      g = QgsGeometry.fromPointXY(transformedPoint)
       f = QgsFeature()
       f.setGeometry(g)
       # Add attribute fields to feature.

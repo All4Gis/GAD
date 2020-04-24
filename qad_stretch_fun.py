@@ -88,14 +88,14 @@ def stretchQgsGeometry(geom, containerGeom, offSetX, offSetY, tolerance2ApproxCu
    if wkbType == QgsWkbTypes.Point or wkbType == QgsWkbTypes.PointZ:
       pt = stretchPoint(geom.asPoint(), containerGeom, offSetX, offSetY)
       if pt is not None:
-         return QgsGeometry.fromPoint(pt)
+         return QgsGeometry.fromPointXY(pt)
             
    if wkbType == QgsWkbTypes.MultiPoint or wkbType == QgsWkbTypes.MultiPointZ:
       stretchedGeom = QgsGeometry(geom)
       points = stretchedGeom.asMultiPoint() # vettore di punti
       atSubGeom = 0
       for pt in points:
-         subGeom = QgsGeometry.fromPoint(pt)
+         subGeom = QgsGeometry.fromPointXY(pt)
          stretchedSubGeom = stretchQgsGeometry(subGeom, containerGeom, offSetX, offSetY, tolerance)
          stretchedGeom = qad_utils.setSubGeom(stretchedGeom, stretchedSubGeom, [atSubGeom])
          atSubGeom = atSubGeom + 1
@@ -285,7 +285,7 @@ def gripStretchQgsGeometry(geom, basePt, ptListToStretch, offSetX, offSetY, tole
       points = stretchedGeom.asMultiPoint() # vettore di punti
       atSubGeom = 0
       for pt in points:
-         subGeom = QgsGeometry.fromPoint(pt)
+         subGeom = QgsGeometry.fromPointXY(pt)
          stretchedSubGeom = gripStretchQgsGeometry(subGeom, basePt, ptListToStretch, offSetX, offSetY, tolerance)
          stretchedGeom = qad_utils.setSubGeom(stretchedGeom, stretchedSubGeom, [atSubGeom])    
          atSubGeom = atSubGeom + 1
